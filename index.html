@@ -1,1101 +1,1600 @@
-html_content = """<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Order Flow Playbook — Trading Journal (NinjaTrader 8 Edition)</title>
-<style>
-  :root {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface-2: #273549;
-    --border: #334155;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --accent-dark: #0284c7;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.5;
-  }
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 1rem 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-  }
-  header h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--accent);
-  }
-  header p {
-    margin: 0.25rem 0 0;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-  .phase-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  select, input, textarea, button {
-    font: inherit;
-    color: var(--text);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-  }
-  select:focus, input:focus, textarea:focus {
-    outline: 2px solid var(--accent);
-    border-color: transparent;
-  }
-  button {
-    cursor: pointer;
-    background: var(--surface-2);
-    font-weight: 600;
-    transition: background 0.15s;
-  }
-  button:hover { background: #334155; }
-  button.primary {
-    background: var(--accent-dark);
-    border-color: var(--accent);
-  }
-  button.primary:hover { background: #0369a1; }
-  button.danger {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: var(--red);
-    color: #fca5a5;
-  }
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-  }
-  .tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.75rem;
-    flex-wrap: wrap;
-  }
-  .tab-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--muted);
-  }
-  .tab-btn.active {
-    background: var(--surface);
-    border-color: var(--border);
-    color: var(--accent);
-  }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.25rem;
-    margin-bottom: 1.25rem;
-  }
-  .card h2, .card h3 {
-    margin-top: 0;
-    font-size: 1.05rem;
-    color: var(--accent);
-  }
-  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
-  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-  .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
-  label {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 0.3rem;
-    font-weight: 600;
-  }
-  input[type="text"], input[type="date"], input[type="number"], select, textarea {
-    width: 100%;
-  }
-  .score-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.75rem;
-  }
-  .score-badge {
-    display: inline-block;
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 0.85rem;
-  }
-  .badge-full { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid var(--green); }
-  .badge-half { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid var(--amber); }
-  .badge-no { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid var(--red); }
-  .checklist {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 0.5rem;
-  }
-  .checklist label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text);
-    font-weight: 400;
-    cursor: pointer;
-  }
-  .checklist input[type="checkbox"] { width: auto; }
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    color: var(--muted);
-    cursor: pointer;
-    background: var(--bg);
-  }
-  .drop-zone:hover { border-color: var(--accent); }
-  .preview-img {
-    max-width: 100%;
-    max-height: 220px;
-    margin-top: 0.75rem;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-  }
-  th, td {
-    text-align: left;
-    padding: 0.65rem 0.75rem;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  th { color: var(--muted); font-weight: 600; background: rgba(15, 23, 42, 0.5); }
-  .pos { color: var(--green); font-weight: 700; }
-  .neg { color: var(--red); font-weight: 700; }
-  .stat-tile {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.9rem;
-  }
-  .stat-tile .val { font-size: 1.4rem; font-weight: 700; margin-top: 0.2rem; }
-  .progress-bg {
-    background: var(--bg);
-    height: 8px;
-    border-radius: 999px;
-    overflow: hidden;
-    margin-top: 0.4rem;
-  }
-  .progress-fill { background: var(--accent); height: 100%; }
-  .modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-  .modal.open { display: flex; }
-  .modal img { max-width: 95vw; max-height: 90vh; border-radius: 8px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Flow Playbook — Trading Journal (NinjaTrader 8 Edition)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            terminal: {
+              bg: '#0b0f17',
+              panel: '#111827',
+              card: '#131c2e',
+              border: '#1e293b',
+              hover: '#1a253a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b0f17;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
 
-<header>
-  <div>
-    <h1>Order Flow Playbook — Trading Journal</h1>
-    <p id="phaseDesc">Section 14 Rule-Based Journal | COMEX Gold (GC / MGC) & Centralized Futures</p>
-  </div>
-  <div class="phase-bar">
-    <label for="trainingPhase" style="margin:0;">Training Phase:</label>
-    <select id="trainingPhase" style="width:auto;">
-      <option value="1">Phase 1: Vocabulary (1–2 wks, Market Replay)</option>
-      <option value="2">Phase 2: Rules on Replay (2–3 wks)</option>
-      <option value="3">Phase 3: Sim101 Live Data (3–4 wks)</option>
-      <option value="4">Phase 4: Live Minimum Size (1 MGC, 100+ trades)</option>
-    </select>
-  </div>
-</header>
-
-<div class="container">
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="log">Log Trade</button>
-    <button class="tab-btn" data-tab="import">Import Broker CSV</button>
-    <button class="tab-btn" data-tab="entries">Journal Log (<span id="tradeCount">0</span>)</button>
-    <button class="tab-btn" data-tab="analytics">Expectancy & 100-Trade Sample</button>
-    <button class="tab-btn" data-tab="review">Weekly Process Review & Backup</button>
-  </div>
-
-  <!-- TAB 1: LOG TRADE -->
-  <div id="tab-log" class="panel active">
-    <form id="tradeForm">
-      <div class="card">
-        <h2>1. Trade Identification (Date, Session, Setup)</h2>
-        <div class="grid-4">
-          <div>
-            <label for="date">Date</label>
-            <input type="date" id="date" required />
+  <!-- Top Navigation & Training Plan Tracker -->
+  <header class="sticky top-0 z-30 bg-[#0b0f17]/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/40 flex items-center justify-center">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
           </div>
           <div>
-            <label for="session">Session / Key Window</label>
-            <select id="session">
-              <option value="Asia / Globex Open">Asia / Globex Open (18:00 ET)</option>
-              <option value="London Open">London Open (~03:00 ET)</option>
-              <option value="LBMA Auction">LBMA Auction (05:30 / 10:00 ET)</option>
-              <option value="COMEX RTH">COMEX RTH (08:20–13:30 ET)</option>
-              <option value="US Afternoon / Close">US Afternoon (13:30–17:00 ET)</option>
-            </select>
-          </div>
-          <div>
-            <label for="setup">Setup (A / B / C)</label>
-            <select id="setup">
-              <option value="Setup A">Setup A: Absorption at VAL/VAH (Responsive)</option>
-              <option value="Setup B">Setup B: Failed Breakout VAH/VAL (Responsive)</option>
-              <option value="Setup C">Setup C: LVN Breakout & Retest (Initiative)</option>
-            </select>
-          </div>
-          <div>
-            <label for="direction">Direction & Contract</label>
-            <select id="direction">
-              <option value="Long (MGC)">Long — MGC</option>
-              <option value="Short (MGC)">Short — MGC</option>
-              <option value="Long (GC)">Long — GC</option>
-              <option value="Short (GC)">Short — GC</option>
-            </select>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">ORDER FLOW PLAYBOOK</h1>
+              <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">NT8 Order Flow+</span>
+            </div>
+            <p class="text-xs text-slate-400">Section 14 Rule-Based Trading Journal & Section 10 Confluence Scorecard (GC / MGC)</p>
           </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>2. Confluence Scorecard (Section 10) & Point Reasoning</h2>
-        <div class="grid-3" style="margin-bottom:1rem;">
-          <div class="score-box">
-            <label for="scLocation">Location (0–2)</label>
-            <select id="scLocation" class="sc-input">
-              <option value="0">0 — Mid-range, no level</option>
-              <option value="1">1 — Minor level</option>
-              <option value="2" selected>2 — Key level (VAH/VAL/LVN/nPOC + HTF)</option>
+      <!-- Training Plan Phase Selector (Section 14) -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 mr-1">Training Phase:</span>
+        <div id="phaseSelector" class="inline-flex flex-wrap rounded-lg bg-slate-900/90 p-1 border border-slate-800 gap-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Primary Actions -->
+      <div class="flex items-center gap-2">
+        <button onclick="openTradeModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-emerald-950/50 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Log Trade
+        </button>
+        <div class="relative inline-block">
+          <button onclick="toggleDataMenu()" id="dataMenuBtn" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition cursor-pointer">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Data
+          </button>
+          <div id="dataMenu" class="hidden absolute right-0 mt-2 w-52 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1.5 z-40">
+            <button onclick="exportJSON()" class="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between">
+              <span>Export Backup (JSON)</span>
+              <span class="font-mono text-[10px] text-slate-400">.json</span>
+            </button>
+            <button onclick="exportCSV()" class="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between">
+              <span>Export Spreadsheet (CSV)</span>
+              <span class="font-mono text-[10px] text-slate-400">.csv</span>
+            </button>
+            <label class="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between cursor-pointer">
+              <span>Import JSON Backup</span>
+              <span class="font-mono text-[10px] text-emerald-400">Load</span>
+              <input type="file" accept=".json" onchange="importJSON(event)" class="hidden" />
+            </label>
+            <div class="my-1 border-t border-slate-800"></div>
+            <button onclick="clearSampleTrades()" class="w-full text-left px-3.5 py-2 text-xs text-amber-400 hover:bg-slate-800">
+              Clear Sample Trades
+            </button>
+            <button onclick="promptResetAll()" class="w-full text-left px-3.5 py-2 text-xs text-rose-400 hover:bg-slate-800">
+              Reset All Journal Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Phase Guidance Banner -->
+    <div id="phaseBanner" class="bg-slate-900/60 border-t border-slate-800/80 px-4 sm:px-6 py-2">
+      <div class="max-w-[1600px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 text-slate-300">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="phaseGoalText" class="font-medium"></span>
+        </div>
+        <div class="text-slate-400 font-mono text-[11px]" id="phaseExitCriteria"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast / Status Banner -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Sample Data Notice -->
+    <div id="sampleNotice" class="hidden rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-start sm:items-center gap-2.5 text-xs text-amber-200">
+        <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span><strong>Illustrative Sample Trades Active:</strong> Pre-populated with Setup A (Figure 10) and Setup B (Figure 12) from the playbook so you can inspect R calculations, scorecard grading, and weekly review fields.</span>
+      </div>
+      <button onclick="clearSampleTrades()" class="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition cursor-pointer">
+        Clear Sample Data
+      </button>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <span>Sample Size</span>
+          <span class="font-mono text-[10px] text-slate-500">Goal: 100/setup</span>
+        </div>
+        <div id="kpiTotalTrades" class="text-2xl font-bold font-mono tabular-nums text-white">0</div>
+        <div id="kpiSampleSub" class="text-[11px] text-slate-400 mt-1 font-mono">0W / 0L / 0BE</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Win Rate</div>
+        <div id="kpiWinRate" class="text-2xl font-bold font-mono tabular-nums text-white">0.0%</div>
+        <div class="text-[11px] text-slate-500 mt-1">Closed trades excl. BE</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Average Win</div>
+        <div id="kpiAvgWin" class="text-2xl font-bold font-mono tabular-nums text-emerald-400">+0.00R</div>
+        <div class="text-[11px] text-slate-500 mt-1">Net R-multiple</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Average Loss</div>
+        <div id="kpiAvgLoss" class="text-2xl font-bold font-mono tabular-nums text-rose-400">-0.00R</div>
+        <div class="text-[11px] text-slate-500 mt-1">Target ≤ 1.00R</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <span>Expectancy (R)</span>
+          <span class="font-mono text-[10px] text-slate-500">Sec. 11</span>
+        </div>
+        <div id="kpiExpectancy" class="text-2xl font-bold font-mono tabular-nums text-white">0.00R</div>
+        <div id="kpiTotalR" class="text-[11px] text-slate-400 mt-1 font-mono">Net: 0.00R</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Rule Compliance</div>
+        <div id="kpiCompliance" class="text-2xl font-bold font-mono tabular-nums text-emerald-400">100%</div>
+        <div id="kpiViolationsCount" class="text-[11px] text-slate-400 mt-1">0 rule violations</div>
+      </div>
+    </section>
+
+    <!-- Main View Switcher Tabs -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      <div class="inline-flex rounded-xl bg-[#111827] p-1 border border-slate-800">
+        <button onclick="switchMainTab('journal')" id="tabBtn-journal" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer bg-slate-800 text-white">
+          Trade Journal Log
+        </button>
+        <button onclick="switchMainTab('import')" id="tabBtn-import" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200">
+          Import Broker CSV
+        </button>
+        <button onclick="switchMainTab('analytics')" id="tabBtn-analytics" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200">
+          Setup & Scorecard Analytics
+        </button>
+        <button onclick="switchMainTab('review')" id="tabBtn-review" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
+          <span>Weekly Process Review</span>
+          <span id="unreviewedBadge" class="px-1.5 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0</span>
+        </button>
+      </div>
+
+      <div class="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+        <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800">8+ Score = Full Size</span>
+        <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-amber-400">6–7 = Half Size</span>
+        <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-rose-400"><6 = No Trade</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: TRADE JOURNAL LOG -->
+    <section id="view-journal" class="space-y-4">
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-3.5 flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+        <div class="flex flex-wrap items-center gap-2 flex-1">
+          <div class="relative flex-1 min-w-[200px] max-w-xs">
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="filterSearch" type="text" oninput="renderJournal()" placeholder="Search notes, scorecard reasons, emotion..." class="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          </div>
+
+          <select id="filterSetup" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">All Setups (A / B / C)</option>
+            <option value="Setup A">Setup A: Absorption @ VAL (Long)</option>
+            <option value="Setup A (Mirror)">Setup A Mirror: Absorption @ VAH (Short)</option>
+            <option value="Setup B">Setup B: Failed Breakout @ VAH (Short)</option>
+            <option value="Setup B (Mirror)">Setup B Mirror: Failed Breakdown @ VAL (Long)</option>
+            <option value="Setup C">Setup C: LVN Breakout & Retest (Long)</option>
+            <option value="Setup C (Mirror)">Setup C Mirror: LVN Breakdown & Retest (Short)</option>
+          </select>
+
+          <select id="filterSession" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">All Sessions</option>
+            <option value="Globex / Asia">Globex / Asia</option>
+            <option value="London">London (~03:00 ET)</option>
+            <option value="COMEX / RTH">COMEX / RTH (08:20–13:30 ET)</option>
+            <option value="Post-Settlement">Post-Settlement</option>
+          </select>
+
+          <select id="filterViolation" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">Compliance: All</option>
+            <option value="CLEAN">Clean (No Violations)</option>
+            <option value="VIOLATION">Rule Violation Flagged</option>
+          </select>
+
+          <select id="filterReview" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">Review Status: All</option>
+            <option value="REVIEWED">Weekly Reviewed</option>
+            <option value="UNREVIEWED">Needs Review</option>
+          </select>
+        </div>
+
+        <div class="text-xs text-slate-400 font-mono" id="filteredCountLabel">Showing 0 trades</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-900/70 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                <th class="py-3 px-3.5">Date / Session</th>
+                <th class="py-3 px-3.5">Setup & Phase</th>
+                <th class="py-3 px-3.5">Scorecard</th>
+                <th class="py-3 px-3.5">Levels (Entry / Stop / T1 / T2 / Exit)</th>
+                <th class="py-3 px-3.5 text-right">R Result</th>
+                <th class="py-3 px-3.5 text-center">Evidence</th>
+                <th class="py-3 px-3.5">Rule Compliance</th>
+                <th class="py-3 px-3.5">Emotion</th>
+                <th class="py-3 px-3.5 text-center">Review</th>
+                <th class="py-3 px-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="journalTableBody" class="divide-y divide-slate-800/80 text-xs">
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="hidden py-14 px-4 text-center">
+          <p class="text-slate-400 text-sm mb-2">No trades match your current filter.</p>
+          <button onclick="openTradeModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer">
+            + Log Your First Trade
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: IMPORT BROKER CSV -->
+    <section id="view-import" class="hidden space-y-4">
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-6 space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-base font-bold text-white">Import Trade History from NinjaTrader 8 or ATAS</h2>
+          <p class="text-xs text-slate-400 mt-1">Export your closed trade history CSV from NinjaTrader 8 (Control Center > Trade Performance > Trades > Export > CSV) or ATAS (Statistics > History > Journal > Export statistics), then drop or select the file below.</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Platform Preset</label>
+            <select id="importPreset" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+              <option value="nt8">NinjaTrader 8 (Trade Performance CSV)</option>
+              <option value="atas">ATAS (Statistics Journal CSV/Excel Export)</option>
+              <option value="generic">Generic CSV</option>
             </select>
           </div>
-          <div class="score-box">
-            <label for="scFootprint">Footprint Trigger (0–3)</label>
-            <select id="scFootprint" class="sc-input">
-              <option value="0">0 — None</option>
-              <option value="1">1 — Delta flip only</option>
-              <option value="2">2 — Absorption or exhaustion</option>
-              <option value="3" selected>3 — Absorption/exhaustion + 3+ stacked imb.</option>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Default Setup Tag for Imported Rows</label>
+            <select id="defaultSetupAssign" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+              <option value="Setup A">Setup A: Absorption @ VAL (Long)</option>
+              <option value="Setup B">Setup B: Failed Breakout @ VAH (Short)</option>
+              <option value="Setup C">Setup C: LVN Breakout & Retest (Long)</option>
             </select>
           </div>
-          <div class="score-box">
-            <label for="scHeatmap">Heatmap Validation (0–2)</label>
-            <select id="scHeatmap" class="sc-input">
-              <option value="0">0 — Absent or contradictory / pulled</option>
-              <option value="1">1 — Liquidity present, untested</option>
-              <option value="2" selected>2 — Defended/reloaded or air pocket consumed</option>
-            </select>
-          </div>
-          <div class="score-box">
-            <label for="scContext">Context (0–2)</label>
-            <select id="scContext" class="sc-input">
-              <option value="0">0 — Fights session structure</option>
-              <option value="1">1 — Neutral</option>
-              <option value="2" selected>2 — Aligned (Balance=Resp / Imbalance=Init)</option>
-            </select>
-          </div>
-          <div class="score-box">
-            <label for="scRisk">Risk ≥ 1.5R (0–1)</label>
-            <select id="scRisk" class="sc-input">
-              <option value="0">0 — Stop not structural or T1 < 1.5R</option>
-              <option value="1" selected>1 — Structural stop & T1 ≥ 1.5R</option>
-            </select>
-          </div>
-          <div class="score-box" style="display:flex;flex-direction:column;justify-content:center;">
-            <label>Total Score & Sizing Threshold</label>
+        </div>
+        <div id="csvDropZone" onclick="document.getElementById('csvFileInput').click()" class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-8 text-center cursor-pointer bg-slate-900/50 transition">
+          <svg class="w-8 h-8 text-slate-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <p class="text-xs font-medium text-slate-300">Click to browse or drop your broker CSV file here</p>
+          <p class="text-[11px] text-slate-500 mt-1">Supports .csv, .txt</p>
+          <input type="file" id="csvFileInput" accept=".csv,.txt" onchange="parseBrokerCSV(event)" class="hidden" />
+        </div>
+        <div id="importStatus" class="text-xs font-mono"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ANALYTICS & SCORECARD VALIDATION -->
+    <section id="view-analytics" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-4">
             <div>
-              <strong id="totalScore" style="font-size:1.35rem;">10</strong> / 10  
-              <span id="sizeBadge" class="score-badge badge-full">8+ Full Size</span>
+              <h3 class="text-sm font-bold text-white">Performance by Setup (100-Trade Sample Goal)</h3>
+              <p class="text-xs text-slate-400 mt-0.5">"Fewer than ~100 logged trades per setup is anecdote. Judge each setup separately." (Sec. 11)</p>
             </div>
           </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                  <th class="py-2 pr-3">Setup</th>
+                  <th class="py-2 px-2">Sample</th>
+                  <th class="py-2 px-2 text-right">Win %</th>
+                  <th class="py-2 px-2 text-right">Avg Win</th>
+                  <th class="py-2 px-2 text-right">Avg Loss</th>
+                  <th class="py-2 pl-2 text-right">Expectancy</th>
+                </tr>
+              </thead>
+              <tbody id="setupBreakdownBody" class="divide-y divide-slate-800/70 font-mono"></tbody>
+            </table>
+          </div>
         </div>
+
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white">Confluence Scorecard Validation (Sec. 10)</h3>
+              <p class="text-xs text-slate-400 mt-0.5">"Check whether higher scores actually performed better, and recalibrate or discard."</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                  <th class="py-2 pr-3">Score Tier</th>
+                  <th class="py-2 px-2 text-right">Trades</th>
+                  <th class="py-2 px-2 text-right">Win %</th>
+                  <th class="py-2 px-2 text-right">Avg R</th>
+                  <th class="py-2 pl-2 text-right">Total R</th>
+                </tr>
+              </thead>
+              <tbody id="scorecardBreakdownBody" class="divide-y divide-slate-800/70 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <h3 class="text-sm font-bold text-white mb-1">Performance by Session Window (Sec. 12)</h3>
+          <p class="text-xs text-slate-400 mb-4">Evaluate liquidity regimes across Globex, London, and COMEX RTH.</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                  <th class="py-2 pr-3">Session</th>
+                  <th class="py-2 px-2 text-right">Trades</th>
+                  <th class="py-2 px-2 text-right">Win %</th>
+                  <th class="py-2 px-2 text-right">Expectancy</th>
+                  <th class="py-2 pl-2 text-right">Net R</th>
+                </tr>
+              </thead>
+              <tbody id="sessionBreakdownBody" class="divide-y divide-slate-800/70 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <h3 class="text-sm font-bold text-white mb-1">Process vs. Outcome Matrix (Sec. 14)</h3>
+          <p class="text-xs text-slate-400 mb-4">"A losing trade that followed the rules is a good trade. A winning trade that broke them is a problem you have not paid for yet."</p>
+          <div id="processMatrixGrid" class="grid grid-cols-2 gap-3 text-xs">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: WEEKLY PROCESS REVIEW -->
+    <section id="view-review" class="hidden space-y-4">
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <label for="scoreReason">Reason for Each Point (Required to test scorecard predictive value)</label>
-          <textarea id="scoreReason" rows="2" placeholder="e.g. Location +2: Prior-day VAL + overnight low; Footprint +3: 3 stacked buy imbalances after heavy bid absorption; Heatmap +2: Bid band reloaded twice..." required></textarea>
+          <h2 class="text-base font-bold text-white">Weekly Process Review Protocol (Section 14)</h2>
+          <p class="text-xs text-slate-400 mt-1">Separate three questions for every logged trade: <span class="text-slate-200 font-medium">1) Was the read correct?</span> <span class="text-slate-200 font-medium">2) Was the execution correct?</span> <span class="text-slate-200 font-medium">3) Was the outcome lucky or unlucky?</span></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="reviewOnlyPending" onchange="renderWeeklyReview()" class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0" />
+            <span>Show unreviewed only</span>
+          </label>
         </div>
       </div>
 
-      <div class="card">
-        <h2>3. Prices & R-Multiple Execution (Entry, Stop, T1, T2, Exit, R Result)</h2>
-        <div class="grid-3" style="margin-bottom:0.75rem;">
-          <div>
-            <label for="entryPrice">Entry Price</label>
-            <input type="number" step="0.1" id="entryPrice" placeholder="3250.5" required />
-          </div>
-          <div>
-            <label for="stopPrice">Stop Price</label>
-            <input type="number" step="0.1" id="stopPrice" placeholder="3246.5" required />
-          </div>
-          <div>
-            <label for="exitPrice">Actual Avg Exit Price</label>
-            <input type="number" step="0.1" id="exitPrice" placeholder="3258.5" required />
-          </div>
-          <div>
-            <label for="t1Price">Target 1 (T1)</label>
-            <input type="number" step="0.1" id="t1Price" placeholder="3258.5" />
-          </div>
-          <div>
-            <label for="t2Price">Target 2 (T2)</label>
-            <input type="number" step="0.1" id="t2Price" placeholder="3266.5" />
-          </div>
-          <div>
-            <label for="rResult">Net R Result (after commissions/slippage)</label>
-            <input type="number" step="0.01" id="rResult" placeholder="Auto-calculated or override" required />
-          </div>
-        </div>
-        <div style="font-size:0.82rem;color:var(--muted);" id="plannedRInfo">Enter Entry, Stop, T1, T2, and Exit to compute planned & realized R.</div>
+      <div id="weeklyReviewList" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       </div>
+    </section>
 
-      <div class="card">
-        <h2>4. Evidence Screenshot, Rule Violations & Emotional State</h2>
-        <div class="grid-2">
+  </main>
+
+  <!-- TRADE ENTRY / EDIT MODAL -->
+  <div id="tradeModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="min-h-screen px-3 sm:px-6 py-6 flex items-center justify-center">
+      <div class="w-full max-w-5xl rounded-2xl bg-[#111827] border border-slate-700 shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
           <div>
-            <label>Screenshot (Volumetric Bars + Depth Map + Volume Profile at Trigger)</label>
-            <div class="drop-zone" id="dropZone">
-              Click to upload, drag & drop, or press <strong>Ctrl+V</strong> to paste chart screenshot
-              <input type="file" id="screenshotInput" accept="image/*" style="display:none;" />
-              <div id="previewContainer"></div>
+            <h2 id="modalTitle" class="text-base sm:text-lg font-bold text-white">Log Order Flow Trade</h2>
+            <p class="text-xs text-slate-400">Record all Section 14 journal fields and Section 10 scorecard points before/after execution.</p>
+          </div>
+          <button onclick="closeTradeModal()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <form id="tradeForm" onsubmit="saveTrade(event)" class="p-6 space-y-6 max-h-[82vh] overflow-y-auto">
+          <input type="hidden" id="editTradeId" />
+
+          <!-- Section 1 -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">1</span>
+              <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Context, Session & Setup Identification</h3>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Date & Time *</label>
+                <input type="datetime-local" id="fDate" required class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Session (Sec. 12) *</label>
+                <select id="fSession" required class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="COMEX / RTH">COMEX / RTH (08:20–13:30 ET)</option>
+                  <option value="London">London (~03:00 ET)</option>
+                  <option value="Globex / Asia">Globex / Asia</option>
+                  <option value="Post-Settlement">Post-Settlement</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Playbook Setup *</label>
+                <select id="fSetup" onchange="onSetupChange()" required class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="Setup A">Setup A: Absorption @ VAL (Long)</option>
+                  <option value="Setup A (Mirror)">Setup A Mirror: Absorption @ VAH (Short)</option>
+                  <option value="Setup B">Setup B: Failed Breakout @ VAH (Short)</option>
+                  <option value="Setup B (Mirror)">Setup B Mirror: Failed Breakdown @ VAL (Long)</option>
+                  <option value="Setup C">Setup C: LVN Breakout & Retest (Long)</option>
+                  <option value="Setup C (Mirror)">Setup C Mirror: LVN Breakdown & Retest (Short)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Instrument & Size</label>
+                <input type="text" id="fInstrument" value="MGC (3 cts)" placeholder="e.g. MGC (3 cts)" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Training Phase (Sec. 14)</label>
+                <select id="fPhase" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="Phase 1: Vocabulary">Phase 1: Vocabulary (Replay)</option>
+                  <option value="Phase 2: Rules on Replay">Phase 2: Rules on Replay</option>
+                  <option value="Phase 3: Sim, Live Data">Phase 3: Sim101, Live Data</option>
+                  <option value="Phase 4: Live, Min Size">Phase 4: Live, Min Size (1 MGC)</option>
+                </select>
+              </div>
             </div>
           </div>
-          <div>
-            <label for="emotionalState">Emotional State Before Entry</label>
-            <select id="emotionalState" style="margin-bottom:0.75rem;">
-              <option value="Calm / Objective">Calm / Objective — Process focused</option>
-              <option value="Patient / Disciplined">Patient / Disciplined — Waited for close</option>
-              <option value="FOMO / Impatient">FOMO / Impatient — Fear of missing move</option>
-              <option value="Revenge / Urge to Recover">Revenge / Urge to make back prior loss</option>
-              <option value="Hesitant / Fearful">Hesitant / Fearful — Delayed click</option>
-              <option value="Tilted / Overconfident">Tilted / Overconfident</option>
-            </select>
 
-            <label>Rule Violations (Yes / No and Which — Section 13)</label>
-            <div class="checklist" style="margin-bottom:0.5rem;">
-              <label><input type="checkbox" class="rv-check" value="No Level / Mid-Range" /> No level / Mid-range</label>
-              <label><input type="checkbox" class="rv-check" value="Anticipated Trigger (No Close)" /> Anticipated before bar close</label>
-              <label><input type="checkbox" class="rv-check" value="Scorecard < 6" /> Traded scorecard < 6</label>
-              <label><input type="checkbox" class="rv-check" value="T1 < 1.5R" /> First target < 1.5R</label>
-              <label><input type="checkbox" class="rv-check" value="Widened / Mental Stop" /> Widened or mental stop</label>
-              <label><input type="checkbox" class="rv-check" value="News / Bad Feed / Past DLL" /> News window / Bad feed / Past DLL</label>
+          <!-- Section 2 -->
+          <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-4 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">2</span>
+                <div>
+                  <h3 class="text-xs font-mono uppercase tracking-wider text-white font-semibold">Confluence Scorecard (Section 10 — 0 to 10 Points)</h3>
+                  <p class="text-[11px] text-slate-400">Log the exact score and the reason for each point awarded.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <div class="text-[10px] font-mono uppercase text-slate-400">Total Score</div>
+                  <div id="liveScoreDisplay" class="text-xl font-bold font-mono text-emerald-400">0 / 10</div>
+                </div>
+                <div id="liveSizingBadge" class="px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                  <6: NO TRADE
+                </div>
+              </div>
             </div>
-            <input type="text" id="violationNotes" placeholder="Optional details on rule violations or thesis exit..." />
-          </div>
-        </div>
-      </div>
 
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-        <button type="reset" id="resetFormBtn">Clear Form</button>
-        <button type="submit" class="primary">Save Trade to Journal</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">1. Location (0–2)</label>
+                  <span id="lblScoreLocation" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scLocation" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Mid-range, no level (Noise)</option>
+                  <option value="1">1 — Minor level</option>
+                  <option value="2">2 — Key level (VAH/VAL, LVN edge, naked POC + HTF)</option>
+                </select>
+              </div>
+
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">2. Footprint Trigger (0–3)</label>
+                  <span id="lblScoreFootprint" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scFootprint" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — None</option>
+                  <option value="1">1 — Delta flip only</option>
+                  <option value="2">2 — Absorption or exhaustion evidence</option>
+                  <option value="3">3 — Absorption/exhaustion + 3+ stacked imbalances</option>
+                </select>
+              </div>
+
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">3. Heatmap Validation (0–2)</label>
+                  <span id="lblScoreHeatmap" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scHeatmap" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Absent, pulled, or contradictory</option>
+                  <option value="1">1 — Liquidity present, untested</option>
+                  <option value="2">2 — Defended/reloaded or air pocket consumed</option>
+                </select>
+              </div>
+
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">4. Context & Auction (0–2)</label>
+                  <span id="lblScoreContext" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scContext" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Fights session structure / value</option>
+                  <option value="1">1 — Neutral / mixed</option>
+                  <option value="2">2 — Fully aligned (Balance=Resp / Imbal=Init)</option>
+                </select>
+              </div>
+
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">5. Risk ≥ 1.5R (0–1)</label>
+                  <span id="lblScoreRisk" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scRisk" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Stop not structural or T1 < 1.5R</option>
+                  <option value="1">1 — Structural stop & T1 target ≥ 1.5R</option>
+                </select>
+              </div>
+
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800 flex flex-col justify-between">
+                <label class="text-xs font-semibold text-slate-200 mb-1">Scorecard Reasoning</label>
+                <input type="text" id="fScoreReason" placeholder="e.g. VAL support + 3 stacked buy imbalances + bid wall reload" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-white" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3 -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">3</span>
+              <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Price Levels, R-Multiple & Execution</h3>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Entry Price *</label>
+                <input type="number" step="0.1" id="fEntry" oninput="recalcExecution()" required placeholder="3250.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Stop Loss *</label>
+                <input type="number" step="0.1" id="fStop" oninput="recalcExecution()" required placeholder="3246.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Target 1 (T1)</label>
+                <input type="number" step="0.1" id="fT1" oninput="recalcExecution()" placeholder="3258.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Target 2 (T2)</label>
+                <input type="number" step="0.1" id="fT2" oninput="recalcExecution()" placeholder="3266.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Actual Exit *</label>
+                <input type="number" step="0.1" id="fExit" oninput="recalcExecution()" required placeholder="3258.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Net R Result *</label>
+                <input type="number" step="0.01" id="fRResult" required placeholder="1.50" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-emerald-400 font-bold focus:outline-none focus:border-emerald-500" />
+              </div>
+            </div>
+            <div id="calcPreviewInfo" class="text-[11px] font-mono text-slate-400 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+              1R Risk: -- pts | Planned T1: -- R | Gross Realized: -- R
+            </div>
+          </div>
+
+          <!-- Section 4 -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">4</span>
+              <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Rule Compliance (Section 13) & Emotional State</h3>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <label class="block text-xs font-medium text-slate-300">Rule Violations (Section 13)</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <label class="flex items-center gap-2 p-2 rounded bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" name="violation" value="No level / Mid-range entry" class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                    <span class="text-slate-300">No level / Mid-range entry</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" name="violation" value="Anticipated trigger (no bar close)" class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                    <span class="text-slate-300">Anticipated before close</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" name="violation" value="Traded scorecard < 6 points" class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                    <span class="text-slate-300">Traded scorecard < 6</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" name="violation" value="First target < 1.5R" class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                    <span class="text-slate-300">First target < 1.5R</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" name="violation" value="Widened or mental stop loss" class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                    <span class="text-slate-300">Widened / mental stop</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" name="violation" value="Traded past DLL / News window" class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                    <span class="text-slate-300">Traded past DLL / News</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Emotional State Before Entry</label>
+                  <select id="fEmotion" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                    <option value="Calm & Objective">Calm & Objective (Process-focused)</option>
+                    <option value="Patient / Disciplined">Patient / Disciplined (Waited for trigger)</option>
+                    <option value="FOMO / Impatient">FOMO / Impatient (Chasing move)</option>
+                    <option value="Revenge / Tilt">Revenge / Tilt (Trying to make back loss)</option>
+                    <option value="Hesitant / Fearful">Hesitant / Fearful (Delayed execution)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Chart Evidence / Screenshot URL or Notes</label>
+                  <input type="text" id="fScreenshot" placeholder="Paste image URL or NT8 chart marker note..." class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+            <button type="button" onclick="closeTradeModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/50 cursor-pointer">
+              Save Trade Entry
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   </div>
 
-  <!-- TAB 2: IMPORT BROKER CSV -->
-  <div id="tab-import" class="panel">
-    <div class="card">
-      <h2>Import Trade History from NinjaTrader 8 or ATAS</h2>
-      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">
-        Export your closed trade history CSV from NinjaTrader 8 (Control Center > Trade Performance > Trades > Export > CSV) or ATAS (Statistics > History > Journal > Export statistics), then drop or select the file below.
-      </p>
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const STORAGE_KEY = 'ofp_nt8_journal_data_v2';
+    const PHASE_KEY = 'ofp_nt8_active_phase_v2';
+
+    const trainingPhases = [
+      { id: 'Phase 1', name: 'Phase 1: Vocabulary', goal: 'Market Replay only. Label every bar: delta, imbalances, absorption/exhaustion, level. NO trading.', criteria: 'Goal: 100% bar-labeling accuracy over 5 sessions' },
+      { id: 'Phase 2', name: 'Phase 2: Rules on Replay', goal: 'Trade Setups A–C strictly on Market Replay with full scorecard & rules.', criteria: 'Goal: Zero Section 13 rule violations for 10 consecutive simulated sessions' },
+      { id: 'Phase 3', name: 'Phase 3: Sim101 Live Data', goal: 'Trade live feed on Sim101 via SuperDOM. Maintain 1.5R+ targets.', criteria: 'Goal: Positive expectancy over 50 Sim101 trades' },
+      { id: 'Phase 4', name: 'Phase 4: Live Minimum Size', goal: 'Trade 1 MGC contract live. Goal is 100+ logged trades per setup with positive expectancy.', criteria: 'Goal: 100+ trades per setup, positive net R after commissions' }
+    ];
+
+    const sampleTrades = [
+      {
+        id: 1710000001001,
+        date: '2026-03-24T09:30',
+        session: 'COMEX / RTH',
+        setup: 'Setup A',
+        instrument: 'MGC (3 cts)',
+        phase: 'Phase 4: Live, Min Size',
+        score: 9,
+        scoreBreakdown: { location: 2, footprint: 3, heatmap: 2, context: 2, risk: 1 },
+        scoreReason: 'Prior day VAL support + 3 stacked buy imbalances + bid wall reload',
+        entry: 2182.5,
+        stop: 2179.0,
+        t1: 2188.0,
+        t2: 2194.0,
+        exit: 2191.0,
+        rResult: 2.43,
+        violations: [],
+        violationNotes: '',
+        emotion: 'Calm & Objective',
+        screenshot: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&auto=format&fit=crop',
+        review: { read: 'Value area low defense held perfectly.', exec: 'Clean limit entry on absorption.', luck: 'Skill / process compliant win.' }
+      },
+      {
+        id: 1710000002002,
+        date: '2026-03-23T14:15',
+        session: 'COMEX / RTH',
+        setup: 'Setup B',
+        instrument: 'MGC (2 cts)',
+        phase: 'Phase 4: Live, Min Size',
+        score: 7,
+        scoreBreakdown: { location: 2, footprint: 2, heatmap: 1, context: 1, risk: 1 },
+        scoreReason: 'VAH overshoot test with exhaustion delta divergence',
+        entry: 2198.0,
+        stop: 2201.5,
+        t1: 2192.5,
+        t2: null,
+        exit: 2192.5,
+        rResult: 1.57,
+        violations: ['First target < 1.5R'],
+        violationNotes: 'Targeted slightly early due to news window approaching',
+        emotion: 'FOMO / Impatient',
+        screenshot: '',
+        review: { read: 'Correct failed breakout read.', exec: 'Exited slightly early before T1.', luck: 'Outcome was good, but rule violation on target.' }
+      }
+    ];
+
+    let trades = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!trades) {
+      trades = sampleTrades;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+    }
+
+    let activePhase = localStorage.getItem(PHASE_KEY) || 'Phase 4';
+    let currentMainTab = 'journal';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initPhaseSelector();
+      renderPhaseBanner();
+      renderKPIs();
+      renderJournal();
+      renderAnalytics();
+      renderWeeklyReview();
+      checkSampleNotice();
       
-      <div class="grid-2" style="margin-bottom:1rem;">
-        <div>
-          <label for="importPreset">Platform Preset</label>
-          <select id="importPreset">
-            <option value="nt8">NinjaTrader 8 (Trade Performance CSV)</option>
-            <option value="atas">ATAS (Statistics Journal CSV/Excel Export)</option>
-            <option value="generic">Generic CSV</option>
-          </select>
-        </div>
-        <div>
-          <label for="defaultSetupAssign">Default Setup Tag for Imported Rows</label>
-          <select id="defaultSetupAssign">
-            <option value="Setup A">Setup A (Responsive)</option>
-            <option value="Setup B">Setup B (Responsive)</option>
-            <option value="Setup C">Setup C (Initiative)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="drop-zone" id="csvDropZone" style="padding: 2rem;">
-        Click to browse or drop your broker CSV file here
-        <input type="file" id="csvFileInput" accept=".csv,.txt,.xls,.xlsx" style="display:none;" />
-      </div>
-      <div id="importStatus" style="margin-top:1rem;font-size:0.9rem;font-weight:600;"></div>
-    </div>
-  </div>
-
-  <!-- TAB 3: JOURNAL LOG -->
-  <div id="tab-entries" class="panel">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;">
-        <h2 style="margin:0;">Logged Trades (One Row Per Trade)</h2>
-        <div style="display:flex;gap:0.5rem;">
-          <select id="filterSetup" style="width:auto;">
-            <option value="ALL">All Setups</option>
-            <option value="Setup A">Setup A</option>
-            <option value="Setup B">Setup B</option>
-            <option value="Setup C">Setup C</option>
-          </select>
-          <select id="filterViolation" style="width:auto;">
-            <option value="ALL">All Compliance</option>
-            <option value="NO">Clean (No Violations)</option>
-            <option value="YES">Rule Violations Only</option>
-          </select>
-        </div>
-      </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Date / Session</th>
-              <th>Setup</th>
-              <th>Score & Reasoning</th>
-              <th>Prices & R</th>
-              <th>Violations & Emotion</th>
-              <th>Evidence</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="journalTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 4: ANALYTICS -->
-  <div id="tab-analytics" class="panel">
-    <div class="grid-4" style="margin-bottom:1.25rem;">
-      <div class="stat-tile">
-        <label>Total Sample Size</label>
-        <div class="val" id="statTotal">0</div>
-      </div>
-      <div class="stat-tile">
-        <label>Win Rate</label>
-        <div class="val" id="statWinRate">0%</div>
-      </div>
-      <div class="stat-tile">
-        <label>Expectancy (R / Trade)</label>
-        <div class="val" id="statExpectancy">0.00R</div>
-      </div>
-      <div class="stat-tile">
-        <label>Cumulative R</label>
-        <div class="val" id="statCumR">0.00R</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Setup Breakdown & 100-Trade Sample Progress (Section 11)</h2>
-      <p style="font-size:0.85rem;color:var(--muted);">"Fewer than about 100 logged trades per setup is anecdote. Judge each setup separately."</p>
-      <div id="setupStatsContainer" class="grid-3"></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <h2>Scorecard Calibration Check</h2>
-        <table>
-          <thead><tr><th>Score Tier</th><th>Trades</th><th>Win Rate</th><th>Avg R</th></tr></thead>
-          <tbody id="scoreTierBody"></tbody>
-        </table>
-      </div>
-      <div class="card">
-        <h2>Process vs. Outcome Matrix</h2>
-        <table>
-          <thead><tr><th>Category</th><th>Count</th><th>Net R</th></tr></thead>
-          <tbody id="matrixBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 5: WEEKLY REVIEW & BACKUP -->
-  <div id="tab-review" class="panel">
-    <div class="card">
-      <h2>Weekly Process Audit (Section 14)</h2>
-      <p style="font-size:0.85rem;color:var(--muted);">"Review weekly. Separate three questions: Was the read correct? Was the execution correct? Was the outcome lucky or unlucky? A losing trade that followed the rules is a good trade. A winning trade that broke them is a problem you have not paid for yet."</p>
-      <div class="grid-3" style="margin-bottom:0.75rem;">
-        <div>
-          <label for="revWeek">Week Ending</label>
-          <input type="date" id="revWeek" />
-        </div>
-        <div>
-          <label for="revRead">1. Was the read correct?</label>
-          <textarea id="revRead" rows="2" placeholder="Context, location, footprint, and heatmap accuracy..."></textarea>
-        </div>
-        <div>
-          <label for="revExec">2. Was the execution correct?</label>
-          <textarea id="revExec" rows="2" placeholder="DOM entry, ATM brackets, stops, scaling at T1..."></textarea>
-        </div>
-      </div>
-      <div style="margin-bottom:0.75rem;">
-        <label for="revLuck">3. Was the outcome lucky or unlucky? (Key adjustments for next week)</label>
-        <textarea id="revLuck" rows="2" placeholder="Identify rule-breaking wins vs. rule-compliant losses..."></textarea>
-      </div>
-      <button class="primary" id="saveReviewBtn">Save Weekly Review</button>
-      <div id="reviewsList" style="margin-top:1rem;"></div>
-    </div>
-
-    <div class="card">
-      <h2>Export & Backup Data</h2>
-      <p style="font-size:0.85rem;color:var(--muted);">Your journal is stored locally in your browser. Export CSV for spreadsheet analysis or JSON to back up screenshots and reviews.</p>
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
-        <button id="exportCsvBtn">Export CSV</button>
-        <button id="exportJsonBtn">Export Full Backup (JSON)</button>
-        <button id="importJsonBtn">Import Backup (JSON)</button>
-        <input type="file" id="importJsonInput" accept=".json" style="display:none;" />
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="imgModal">
-  <img id="modalImg" src="" alt="Trade Screenshot" />
-</div>
-
-<script>
-  const STORAGE_KEY = 'ofp_nt8_journal_v1';
-  const REVIEWS_KEY = 'ofp_nt8_reviews_v1';
-  const PHASE_KEY = 'ofp_nt8_phase_v1';
-
-  const phaseDescriptions = {
-    '1': 'Phase 1 (1–2 wks): Market Replay only. Label every bar: delta, imbalances, absorption/exhaustion, level. No trading.',
-    '2': 'Phase 2 (2–3 wks): Trade Setups A–C on Market Replay with full journaling, scorecard, and costs.',
-    '3': 'Phase 3 (3–4 wks): Trade the same rules on a live feed on Sim101 in real time via SuperDOM.',
-    '4': 'Phase 4 (Ongoing): Trade MGC at 1-contract size. Goal is 100+ logged trades per setup & positive expectancy after fees.'
-  };
-
-  let trades = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  let reviews = JSON.parse(localStorage.getItem(REVIEWS_KEY) || '[]');
-  let currentScreenshot = '';
-
-  const phaseSelect = document.getElementById('trainingPhase');
-  phaseSelect.value = localStorage.getItem(PHASE_KEY) || '2';
-  document.getElementById('phaseDesc').textContent = phaseDescriptions[phaseSelect.value];
-  phaseSelect.addEventListener('change', () => {
-    localStorage.setItem(PHASE_KEY, phaseSelect.value);
-    document.getElementById('phaseDesc').textContent = phaseDescriptions[phaseSelect.value];
-  });
-
-  document.getElementById('date').valueAsDate = new Date();
-  document.getElementById('revWeek').valueAsDate = new Date();
-
-  // Tabs
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'analytics') renderAnalytics();
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('fDate').value = now.toISOString().slice(0,16);
+      recalcScorecard();
     });
-  });
 
-  // Scorecard calculation
-  function updateScore() {
-    const total = ['scLocation', 'scFootprint', 'scHeatmap', 'scContext', 'scRisk']
-      .reduce((sum, id) => sum + Number(document.getElementById(id).value), 0);
-    document.getElementById('totalScore').textContent = total;
-    const badge = document.getElementById('sizeBadge');
-    if (total >= 8) {
-      badge.textContent = '8+ Full Size';
-      badge.className = 'score-badge badge-full';
-    } else if (total >= 6) {
-      badge.textContent = '6–7 Half Size';
-      badge.className = 'score-badge badge-half';
-    } else {
-      badge.textContent = '<6 No Trade';
-      badge.className = 'score-badge badge-no';
+    function checkSampleNotice() {
+      const hasSamples = trades.some(t => t.id === 1710000001001 || t.id === 1710000002002);
+      const notice = document.getElementById('sampleNotice');
+      if (hasSamples) {
+        notice.classList.remove('hidden');
+      } else {
+        notice.classList.add('hidden');
+      }
     }
-    return total;
-  }
-  document.querySelectorAll('.sc-input').forEach(el => el.addEventListener('change', updateScore));
 
-  // R-multiple auto calculation
-  function calcR() {
-    const entry = parseFloat(document.getElementById('entryPrice').value);
-    const stop = parseFloat(document.getElementById('stopPrice').value);
-    const t1 = parseFloat(document.getElementById('t1Price').value);
-    const t2 = parseFloat(document.getElementById('t2Price').value);
-    const exit = parseFloat(document.getElementById('exitPrice').value);
-    const isShort = document.getElementById('direction').value.startsWith('Short');
-    const info = document.getElementById('plannedRInfo');
-
-    if (isNaN(entry) || isNaN(stop) || entry === stop) {
-      info.textContent = 'Enter Entry, Stop, T1, T2, and Exit to compute planned & realized R.';
-      return;
+    function clearSampleTrades() {
+      trades = trades.filter(t => t.id !== 1710000001001 && t.id !== 1710000002002);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+      checkSampleNotice();
+      renderKPIs();
+      renderJournal();
+      renderAnalytics();
+      renderWeeklyReview();
+      showToast('Sample trades cleared from journal.');
     }
-    const risk = isShort ? (stop - entry) : (entry - stop);
-    if (risk <= 0) {
-      info.textContent = 'Warning: Stop price is on the wrong side of Entry for this direction.';
-      return;
-    }
-    let parts = [`1R Risk = ${risk.toFixed(2)} pts`];
-    if (!isNaN(t1)) {
-      const r1 = (isShort ? (entry - t1) : (t1 - entry)) / risk;
-      parts.push(`Planned T1 = ${r1.toFixed(2)}R`);
-    }
-    if (!isNaN(t2)) {
-      const r2 = (isShort ? (entry - t2) : (t2 - entry)) / risk;
-      parts.push(`Planned T2 = ${r2.toFixed(2)}R`);
-    }
-    if (!isNaN(exit)) {
-      const realized = (isShort ? (entry - exit) : (exit - entry)) / risk;
-      document.getElementById('rResult').value = realized.toFixed(2);
-      parts.push(`Gross Realized = ${realized.toFixed(2)}R`);
-    }
-    info.textContent = parts.join(' | ');
-  }
-  ['entryPrice', 'stopPrice', 't1Price', 't2Price', 'exitPrice', 'direction'].forEach(id => {
-    document.getElementById(id).addEventListener('input', calcR);
-  });
 
-  // Screenshot handling
-  function processImageFile(file) {
-    if (!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxW = 1000;
-        const scale = img.width > maxW ? maxW / img.width : 1;
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        currentScreenshot = canvas.toDataURL('image/jpeg', 0.72);
-        document.getElementById('previewContainer').innerHTML = `<img src="${currentScreenshot}" class="preview-img" alt="Preview" />`;
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
+    function initPhaseSelector() {
+      const container = document.getElementById('phaseSelector');
+      container.innerHTML = trainingPhases.map(p => {
+        const isActive = activePhase.includes(p.id);
+        return `
+          <button onclick="setPhase('${p.id}')" class="px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${isActive ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}">
+            ${p.id}
+          </button>
+        `;
+      }).join('');
+    }
 
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('screenshotInput');
-  dropZone.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', e => processImageFile(e.target.files[0]));
+    function setPhase(phaseId) {
+      activePhase = phaseId;
+      localStorage.setItem(PHASE_KEY, phaseId);
+      initPhaseSelector();
+      renderPhaseBanner();
+      showToast('Switched to ' + phaseId);
+    }
 
-  // CSV Broker Import Parsing
-  const csvDropZone = document.getElementById('csvDropZone');
-  const csvFileInput = document.getElementById('csvFileInput');
-  csvDropZone.addEventListener('click', () => csvFileInput.click());
-  csvFileInput.addEventListener('change', e => parseBrokerCSV(e.target.files[0]));
+    function renderPhaseBanner() {
+      const current = trainingPhases.find(p => activePhase.includes(p.id)) || trainingPhases[3];
+      document.getElementById('phaseGoalText').textContent = current.name + ': ' + current.goal;
+      document.getElementById('phaseExitCriteria').textContent = current.criteria;
+    }
 
-  function parseBrokerCSV(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target.result;
-      const preset = document.getElementById('importPreset').value;
-      const defaultSetup = document.getElementById('defaultSetupAssign').value;
-      const lines = text.split(/\r\n|\n/).filter(l => l.trim().length > 0);
-      if (lines.length < 2) {
-        document.getElementById('importStatus').innerHTML = '<span class="neg">Error: CSV file appears empty or lacks rows.</span>';
-        return;
+    function switchMainTab(tab) {
+      currentMainTab = tab;
+      ['journal', 'import', 'analytics', 'review'].forEach(t => {
+        const el = document.getElementById('view-' + t);
+        const btn = document.getElementById('tabBtn-' + t);
+        if (el) {
+          if (t === tab) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        }
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer bg-slate-800 text-white';
+          } else {
+            btn.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200';
+          }
+        }
+      });
+      if (tab === 'analytics') renderAnalytics();
+      if (tab === 'review') renderWeeklyReview();
+    }
+
+    function toggleDataMenu() {
+      const menu = document.getElementById('dataMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    window.addEventListener('click', (e) => {
+      const btn = document.getElementById('dataMenuBtn');
+      const menu = document.getElementById('dataMenu');
+      if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    function recalcScorecard() {
+      const loc = parseInt(document.getElementById('scLocation').value) || 0;
+      const fp = parseInt(document.getElementById('scFootprint').value) || 0;
+      const hm = parseInt(document.getElementById('scHeatmap').value) || 0;
+      const ctx = parseInt(document.getElementById('scContext').value) || 0;
+      const risk = parseInt(document.getElementById('scRisk').value) || 0;
+
+      document.getElementById('lblScoreLocation').textContent = loc + ' pts';
+      document.getElementById('lblScoreFootprint').textContent = fp + ' pts';
+      document.getElementById('lblScoreHeatmap').textContent = hm + ' pts';
+      document.getElementById('lblScoreContext').textContent = ctx + ' pts';
+      document.getElementById('lblScoreRisk').textContent = risk + ' pts';
+
+      const total = loc + fp + hm + ctx + risk;
+      document.getElementById('liveScoreDisplay').textContent = total + ' / 10';
+
+      const badge = document.getElementById('liveSizingBadge');
+      if (total >= 8) {
+        badge.className = 'px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        badge.textContent = '8+ : FULL SIZE';
+      } else if (total >= 6) {
+        badge.className = 'px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        badge.textContent = '6–7 : HALF SIZE';
+      } else {
+        badge.className = 'px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        badge.textContent = '<6 : NO TRADE';
+      }
+    }
+
+    function recalcExecution() {
+      const entry = parseFloat(document.getElementById('fEntry').value);
+      const stop = parseFloat(document.getElementById('stopPrice')?.value || document.getElementById('fStop').value);
+      const t1 = parseFloat(document.getElementById('fT1').value);
+      const exit = parseFloat(document.getElementById('fExit').value);
+      const setup = document.getElementById('fSetup').value;
+      const isShort = setup.includes('Short') || setup.includes('Mirror') && !setup.includes('Setup B Mirror') && !setup.includes('Setup C Mirror') ? (setup.includes('Setup A (Mirror)') || setup.includes('Setup B') || setup.includes('Setup C (Mirror)')) : false;
+
+      if (isNaN(entry) || isNaN(stop)) return;
+
+      const risk = Math.abs(entry - stop);
+      if (risk <= 0) return;
+
+      let t1R = '--';
+      if (!isNaN(t1)) {
+        const t1Dist = isShort ? (entry - t1) : (t1 - entry);
+        t1R = (t1Dist / risk).toFixed(2);
       }
 
-      const parseCSVLine = (line) => {
-        const res = [];
-        let cur = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const c = line[i];
-          if (c === '"') {
-            inQuotes = !inQuotes;
-          } else if (c === ',' && !inQuotes) {
-            res.push(cur.trim());
-            cur = '';
-          } else {
-            cur += c;
-          }
+      let grossR = '--';
+      if (!isNaN(exit)) {
+        const exitDist = isShort ? (entry - exit) : (exit - entry);
+        grossR = (exitDist / risk).toFixed(2);
+        document.getElementById('fRResult').value = grossR;
+      }
+
+      document.getElementById('calcPreviewInfo').textContent = `1R Risk: ${risk.toFixed(1)} pts | Planned T1: ${t1R} R | Gross Realized: ${grossR} R`;
+    }
+
+    function onSetupChange() {
+      recalcExecution();
+    }
+
+    function openTradeModal(tradeId = null) {
+      document.getElementById('tradeModal').classList.remove('hidden');
+      if (tradeId) {
+        document.getElementById('modalTitle').textContent = 'Edit Order Flow Trade';
+        const t = trades.find(x => x.id === tradeId);
+        if (t) {
+          document.getElementById('editTradeId').value = t.id;
+          document.getElementById('fDate').value = t.date;
+          document.getElementById('fSession').value = t.session;
+          document.getElementById('fSetup').value = t.setup;
+          document.getElementById('fInstrument').value = t.instrument || 'MGC (3 cts)';
+          document.getElementById('fPhase').value = t.phase || activePhase;
+          
+          document.getElementById('scLocation').value = t.scoreBreakdown?.location || 0;
+          document.getElementById('scFootprint').value = t.scoreBreakdown?.footprint || 0;
+          document.getElementById('scHeatmap').value = t.scoreBreakdown?.heatmap || 0;
+          document.getElementById('scContext').value = t.scoreBreakdown?.context || 0;
+          document.getElementById('scRisk').value = t.scoreBreakdown?.risk || 0;
+          document.getElementById('fScoreReason').value = t.scoreReason || '';
+
+          document.getElementById('fEntry').value = t.entry;
+          document.getElementById('fStop').value = t.stop;
+          document.getElementById('fT1').value = t.t1 ?? '';
+          document.getElementById('fT2').value = t.t2 ?? '';
+          document.getElementById('fExit').value = t.exit;
+          document.getElementById('fRResult').value = t.rResult;
+
+          document.querySelectorAll('input[name="violation"]').forEach(cb => {
+            cb.checked = t.violations?.includes(cb.value);
+          });
+          document.getElementById('fEmotion').value = t.emotion || 'Calm & Objective';
+          document.getElementById('fScreenshot').value = t.screenshot || '';
         }
-        res.push(cur.trim());
-        return res;
+      } else {
+        document.getElementById('modalTitle').textContent = 'Log Order Flow Trade';
+        document.getElementById('tradeForm').reset();
+        document.getElementById('editTradeId').value = '';
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('fDate').value = now.toISOString().slice(0,16);
+        document.getElementById('fPhase').value = activePhase;
+        document.querySelectorAll('input[name="violation"]').forEach(cb => cb.checked = false);
+      }
+      recalcScorecard();
+      recalcExecution();
+    }
+
+    function closeTradeModal() {
+      document.getElementById('tradeModal').classList.add('hidden');
+    }
+
+    function saveTrade(e) {
+      e.preventDefault();
+      const editId = document.getElementById('editTradeId').value;
+
+      const loc = parseInt(document.getElementById('scLocation').value) || 0;
+      const fp = parseInt(document.getElementById('scFootprint').value) || 0;
+      const hm = parseInt(document.getElementById('scHeatmap').value) || 0;
+      const ctx = parseInt(document.getElementById('scContext').value) || 0;
+      const riskPts = parseInt(document.getElementById('scRisk').value) || 0;
+      const totalScore = loc + fp + hm + ctx + riskPts;
+
+      const violations = [];
+      document.querySelectorAll('input[name="violation"]:checked').forEach(cb => violations.push(cb.value));
+
+      const tradeData = {
+        id: editId ? parseInt(editId) : Date.now(),
+        date: document.getElementById('fDate').value,
+        session: document.getElementById('fSession').value,
+        setup: document.getElementById('fSetup').value,
+        instrument: document.getElementById('fInstrument').value,
+        phase: document.getElementById('fPhase').value,
+        score: totalScore,
+        scoreBreakdown: { location: loc, footprint: fp, heatmap: hm, context: ctx, risk: riskPts },
+        scoreReason: document.getElementById('fScoreReason').value,
+        entry: parseFloat(document.getElementById('fEntry').value),
+        stop: parseFloat(document.getElementById('fStop').value),
+        t1: parseFloat(document.getElementById('fT1').value) || null,
+        t2: parseFloat(document.getElementById('fT2').value) || null,
+        exit: parseFloat(document.getElementById('fExit').value),
+        rResult: parseFloat(document.getElementById('fRResult').value),
+        violations: violations,
+        violationNotes: violations.length ? 'Flagged via entry form' : '',
+        emotion: document.getElementById('fEmotion').value,
+        screenshot: document.getElementById('fScreenshot').value,
+        review: null
       };
 
-      const headers = parseCSVLine(lines[0]).map(h => h.replace(/^["']|["']$/g, '').toLowerCase());
-      let importedCount = 0;
-
-      for (let i = 1; i < lines.length; i++) {
-        const row = parseCSVLine(lines[i]);
-        if (row.length < 2) continue;
-        
-        let tradeDate = new Date().toISOString().split('T')[0];
-        let entryPrice = 3250.0;
-        let exitPrice = 3255.0;
-        let direction = 'Long (MGC)';
-        let pnlR = 1.0;
-
-        if (preset === 'nt8') {
-          const findCol = (name) => headers.findIndex(h => h.includes(name));
-          const posIdx = findCol('market position') !== -1 ? findCol('market position') : findCol('action');
-          const entryIdx = findCol('entry price');
-          const exitIdx = findCol('exit price');
-          const profitIdx = findCol('profit') !== -1 ? findCol('profit') : findCol('p/l');
-          const timeIdx = findCol('exit time') !== -1 ? findCol('exit time') : findCol('time');
-
-          if (entryIdx !== -1 && row[entryIdx]) entryPrice = parseFloat(row[entryIdx]) || 3250;
-          if (exitIdx !== -1 && row[exitIdx]) exitPrice = parseFloat(row[exitIdx]) || 3255;
-          if (posIdx !== -1 && row[posIdx] && row[posIdx].toLowerCase().includes('short')) direction = 'Short (MGC)';
-          if (timeIdx !== -1 && row[timeIdx]) {
-            const parsedD = new Date(row[timeIdx]);
-            if (!isNaN(parsedD)) tradeDate = parsedD.toISOString().split('T')[0];
-          }
-          const profit = profitIdx !== -1 ? parseFloat(row[profitIdx]) : 50;
-          pnlR = isNaN(profit) ? 1.0 : (profit >= 0 ? 1.5 : -1.0);
-        } else if (preset === 'atas') {
-          const findCol = (name) => headers.findIndex(h => h.includes(name));
-          const entryIdx = findCol('open price');
-          const exitIdx = findCol('close price');
-          const timeIdx = findCol('close time');
-          const pnlIdx = findCol('pnl') !== -1 ? findCol('pnl') : findCol('result');
-
-          if (entryIdx !== -1 && row[entryIdx]) entryPrice = parseFloat(row[entryIdx]) || 3250;
-          if (exitIdx !== -1 && row[exitIdx]) exitPrice = parseFloat(row[exitIdx]) || 3255;
-          if (entryIdx !== -1 && exitIdx !== -1 && parseFloat(row[exitIdx]) < parseFloat(row[entryIdx])) direction = 'Short (MGC)';
-          if (timeIdx !== -1 && row[timeIdx]) {
-            const parsedD = new Date(row[timeIdx]);
-            if (!isNaN(parsedD)) tradeDate = parsedD.toISOString().split('T')[0];
-          }
-          const pnl = pnlIdx !== -1 ? parseFloat(row[pnlIdx]) : 50;
-          pnlR = isNaN(pnl) ? 1.0 : (pnl >= 0 ? 1.5 : -1.0);
+      if (editId) {
+        const idx = trades.findIndex(x => x.id === parseInt(editId));
+        if (idx !== -1) {
+          tradeData.review = trades[idx].review; // preserve review if edited
+          trades[idx] = tradeData;
         }
-
-        const newTrade = {
-          id: Date.now() + i,
-          phase: phaseSelect.value,
-          date: tradeDate,
-          session: 'COMEX RTH',
-          setup: defaultSetup,
-          direction: direction,
-          score: 8,
-          scoreBreakdown: { loc: 2, fp: 3, hm: 2, ctx: 2, risk: 1 },
-          scoreReason: 'Imported from broker CSV preset.',
-          entry: entryPrice,
-          stop: direction.startsWith('Long') ? entryPrice - 4 : entryPrice + 4,
-          t1: direction.startsWith('Long') ? entryPrice + 8 : entryPrice - 8,
-          t2: null,
-          exit: exitPrice,
-          rResult: pnlR,
-          screenshot: '',
-          hasViolation: false,
-          violations: [],
-          violationNotes: '',
-          emotion: 'Calm / Objective'
-        };
-
-        trades.unshift(newTrade);
-        importedCount++;
+      } else {
+        trades.unshift(tradeData);
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
-      renderTrades();
-      document.getElementById('importStatus').innerHTML = `<span class="pos">Successfully imported ${importedCount} trades from file! Check Journal Log tab.</span>`;
-    };
-    reader.readAsText(file);
-  }
-
-  // Save manual trade
-  document.getElementById('tradeForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const violations = Array.from(document.querySelectorAll('.rv-check:checked')).map(c => c.value);
-    const noteText = document.getElementById('violationNotes').value.trim();
-    const hasViolation = violations.length > 0 || noteText.length > 0;
-
-    const trade = {
-      id: Date.now(),
-      phase: phaseSelect.value,
-      date: document.getElementById('date').value,
-      session: document.getElementById('session').value,
-      setup: document.getElementById('setup').value,
-      direction: document.getElementById('direction').value,
-      score: updateScore(),
-      scoreBreakdown: {
-        loc: Number(document.getElementById('scLocation').value),
-        fp: Number(document.getElementById('scFootprint').value),
-        hm: Number(document.getElementById('scHeatmap').value),
-        ctx: Number(document.getElementById('scContext').value),
-        risk: Number(document.getElementById('scRisk').value)
-      },
-      scoreReason: document.getElementById('scoreReason').value.trim(),
-      entry: parseFloat(document.getElementById('entryPrice').value),
-      stop: parseFloat(document.getElementById('stopPrice').value),
-      t1: parseFloat(document.getElementById('t1Price').value) || null,
-      t2: parseFloat(document.getElementById('t2Price').value) || null,
-      exit: parseFloat(document.getElementById('exitPrice').value),
-      rResult: parseFloat(document.getElementById('rResult').value),
-      screenshot: currentScreenshot,
-      hasViolation,
-      violations,
-      violationNotes: noteText,
-      emotion: document.getElementById('emotionalState').value
-    };
-
-    trades.unshift(trade);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
-    document.getElementById('tradeForm').reset();
-    document.getElementById('date').valueAsDate = new Date();
-    currentScreenshot = '';
-    document.getElementById('previewContainer').innerHTML = '';
-    updateScore();
-    renderTrades();
-    alert('Trade saved to Order Flow Journal.');
-  });
-
-  // Render trades table
-  function renderTrades() {
-    document.getElementById('tradeCount').textContent = trades.length;
-    const fSetup = document.getElementById('filterSetup').value;
-    const fViol = document.getElementById('filterViolation').value;
-
-    const filtered = trades.filter(t => {
-      if (fSetup !== 'ALL' && t.setup !== fSetup) return false;
-      if (fViol === 'YES' && !t.hasViolation) return false;
-      if (fViol === 'NO' && t.hasViolation) return false;
-      return true;
-    });
-
-    const tbody = document.getElementById('journalTableBody');
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">No trades logged matching filters.</td></tr>';
-      return;
+      closeTradeModal();
+      renderKPIs();
+      renderJournal();
+      renderAnalytics();
+      renderWeeklyReview();
+      showToast(editId ? 'Trade updated successfully.' : 'Trade logged successfully.');
     }
 
-    tbody.innerHTML = filtered.map(t => {
-      const rClass = t.rResult >= 0 ? 'pos' : 'neg';
-      const vBadge = t.hasViolation
-        ? `<span class="score-badge badge-no">YES</span><div style="font-size:0.78rem;margin-top:0.25rem;">${[...t.violations, t.violationNotes].filter(Boolean).join('; ')}</div>`
-        : `<span class="score-badge badge-full">NO</span>`;
-      const imgBtn = t.screenshot
-        ? `<button type="button" onclick="openImg('${t.id}')">View Chart</button>`
-        : `<span style="color:var(--muted);font-size:0.8rem;">None</span>`;
-      return `
-        <tr>
-          <td><strong>${t.date}</strong><br><span style="color:var(--muted);font-size:0.8rem;">${t.session} (Ph.${t.phase})</span></td>
-          <td><strong>${t.setup}</strong><br><span style="font-size:0.8rem;">${t.direction}</span></td>
-          <td><strong>${t.score}/10</strong><div style="font-size:0.8rem;color:var(--muted);max-width:260px;">${t.scoreReason}</div></td>
-          <td>
-            E: ${t.entry} | S: ${t.stop}<br>
-            T1: ${t.t1 ?? '-'} | T2: ${t.t2 ?? '-'}<br>
-            Exit: ${t.exit} → <span class="${rClass}">${t.rResult >= 0 ? '+' : ''}${t.rResult.toFixed(2)}R</span>
-          </td>
-          <td>${vBadge}<div style="font-size:0.78rem;color:var(--muted);margin-top:0.25rem;">Emotion: ${t.emotion}</div></td>
-          <td>${imgBtn}</td>
-          <td><button type="button" class="danger" onclick="deleteTrade(${t.id})">Delete</button></td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  document.getElementById('filterSetup').addEventListener('change', renderTrades);
-  document.getElementById('filterViolation').addEventListener('change', renderTrades);
-
-  window.deleteTrade = id => {
-    if (!confirm('Delete this journal entry?')) return;
-    trades = trades.filter(t => t.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
-    renderTrades();
-    renderAnalytics();
-  };
-
-  window.openImg = id => {
-    const t = trades.find(x => String(x.id) === String(id));
-    if (t && t.screenshot) {
-      document.getElementById('modalImg').src = t.screenshot;
-      document.getElementById('imgModal').classList.add('open');
+    function deleteTrade(id) {
+      if (!confirm('Are you sure you want to delete this trade entry?')) return;
+      trades = trades.filter(t => t.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+      renderKPIs();
+      renderJournal();
+      renderAnalytics();
+      renderWeeklyReview();
+      showToast('Trade deleted.');
     }
-  };
-  document.getElementById('imgModal').classList.remove('open'); // safeguard
 
-  // Analytics
-  function calcStats(list) {
-    if (!list.length) return { count: 0, winRate: 0, exp: 0, cumR: 0 };
-    const wins = list.filter(t => t.rResult > 0);
-    const losses = list.filter(t => t.rResult <= 0);
-    const winRate = wins.length / list.length;
-    const lossRate = losses.length / list.length;
-    const avgWin = wins.length ? wins.reduce((s, t) => s + t.rResult, 0) / wins.length : 0;
-    const avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + t.rResult, 0) / losses.length) : 0;
-    const exp = (winRate * avgWin) - (lossRate * avgLoss);
-    const cumR = list.reduce((s, t) => s + t.rResult, 0);
-    return { count: list.length, winRate: winRate * 100, exp, cumR };
-  }
+    // --- BROKER CSV PARSER ---
+    function parseBrokerCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const text = event.target.result;
+        const preset = document.getElementById('importPreset').value;
+        const defaultSetup = document.getElementById('defaultSetupAssign').value;
+        const lines = text.split(/\r\n|\n/).filter(l => l.trim().length > 0);
+        
+        if (lines.length < 2) {
+          document.getElementById('importStatus').innerHTML = '<span class="text-rose-400">Error: CSV file appears empty or lacks header rows.</span>';
+          return;
+        }
 
-  function renderAnalytics() {
-    const overall = calcStats(trades);
-    document.getElementById('statTotal').textContent = overall.count;
-    document.getElementById('statWinRate').textContent = overall.winRate.toFixed(1) + '%';
-    const expEl = document.getElementById('statExpectancy');
-    expEl.textContent = (overall.exp >= 0 ? '+' : '') + overall.exp.toFixed(2) + 'R';
-    expEl.className = 'val ' + (overall.exp >= 0 ? 'pos' : 'neg');
-    const cumEl = document.getElementById('statCumR');
-    cumEl.textContent = (overall.cumR >= 0 ? '+' : '') + overall.cumR.toFixed(2) + 'R';
-    cumEl.className = 'val ' + (overall.cumR >= 0 ? 'pos' : 'neg');
+        const parseLine = (line) => {
+          const res = [];
+          let cur = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') {
+              inQuotes = !inQuotes;
+            } else if (c === ',' && !inQuotes) {
+              res.push(cur.trim());
+              cur = '';
+            } else {
+              cur += c;
+            }
+          }
+          res.push(cur.trim());
+          return res;
+        };
 
-    // Per setup
-    const setups = ['Setup A', 'Setup B', 'Setup C'];
-    document.getElementById('setupStatsContainer').innerHTML = setups.map(s => {
-      const sub = trades.filter(t => t.setup === s);
-      const st = calcStats(sub);
-      const pct = Math.min(100, (st.count / 100) * 100);
-      return `
-        <div class="stat-tile">
-          <strong>${s}</strong>
-          <div style="font-size:0.82rem;color:var(--muted);margin-top:0.25rem;">
-            Sample: ${st.count} / 100 trades (${pct.toFixed(0)}%)
-          </div>
-          <div class="progress-bg"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <div style="margin-top:0.6rem;font-size:0.88rem;">
-            Win Rate: <strong>${st.winRate.toFixed(1)}%</strong> | Exp: <strong class="${st.exp >= 0 ? 'pos' : 'neg'}">${st.exp >= 0 ? '+' : ''}${st.exp.toFixed(2)}R</strong>
-          </div>
+        const headers = parseLine(lines[0]).map(h => h.replace(/^["']|["']$/g, '').toLowerCase());
+        let count = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const row = parseLine(lines[i]);
+          if (row.length < 2) continue;
+
+          let tradeDate = new Date().toISOString().slice(0,10) + 'T09:30';
+          let entryPrice = 2150.0;
+          let exitPrice = 2155.0;
+          let pnlR = 1.0;
+
+          if (preset === 'nt8') {
+            const findCol = (name) => headers.findIndex(h => h.includes(name));
+            const entryIdx = findCol('entry price');
+            const exitIdx = findCol('exit price');
+            const profitIdx = findCol('profit') !== -1 ? findCol('profit') : findCol('p/l');
+            const timeIdx = findCol('exit time') !== -1 ? findCol('exit time') : findCol('time');
+
+            if (entryIdx !== -1 && row[entryIdx]) entryPrice = parseFloat(row[entryIdx]) || 2150;
+            if (exitIdx !== -1 && row[exitIdx]) exitPrice = parseFloat(row[exitIdx]) || 2155;
+            if (timeIdx !== -1 && row[timeIdx]) {
+              const d = new Date(row[timeIdx]);
+              if (!isNaN(d)) tradeDate = d.toISOString().slice(0,16);
+            }
+            const profit = profitIdx !== -1 ? parseFloat(row[profitIdx]) : 50;
+            pnlR = isNaN(profit) ? 1.0 : (profit >= 0 ? 1.5 : -1.0);
+          } else if (preset === 'atas') {
+            const findCol = (name) => headers.findIndex(h => h.includes(name));
+            const entryIdx = findCol('open price');
+            const exitIdx = findCol('close price');
+            const timeIdx = findCol('close time');
+            const pnlIdx = findCol('pnl') !== -1 ? findCol('pnl') : findCol('result');
+
+            if (entryIdx !== -1 && row[entryIdx]) entryPrice = parseFloat(row[entryIdx]) || 2150;
+            if (exitIdx !== -1 && row[exitIdx]) exitPrice = parseFloat(row[exitIdx]) || 2155;
+            if (timeIdx !== -1 && row[timeIdx]) {
+              const d = new Date(row[timeIdx]);
+              if (!isNaN(d)) tradeDate = d.toISOString().slice(0,16);
+            }
+            const pnl = pnlIdx !== -1 ? parseFloat(row[pnlIdx]) : 50;
+            pnlR = isNaN(pnl) ? 1.0 : (pnl >= 0 ? 1.5 : -1.0);
+          } else {
+            // generic fallback
+            pnlR = 1.0;
+          }
+
+          const newT = {
+            id: Date.now() + i,
+            date: tradeDate,
+            session: 'COMEX / RTH',
+            setup: defaultSetup,
+            instrument: 'MGC (1 ct)',
+            phase: activePhase,
+            score: 8,
+            scoreBreakdown: { location: 2, footprint: 3, heatmap: 2, context: 2, risk: 1 },
+            scoreReason: 'Imported from broker CSV export preset.',
+            entry: entryPrice,
+            stop: entryPrice - 4,
+            t1: entryPrice + 8,
+            t2: null,
+            exit: exitPrice,
+            rResult: pnlR,
+            violations: [],
+            violationNotes: '',
+            emotion: 'Calm & Objective',
+            screenshot: '',
+            review: null
+          };
+
+          trades.unshift(newT);
+          count++;
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+        renderKPIs();
+        renderJournal();
+        renderAnalytics();
+        renderWeeklyReview();
+        document.getElementById('importStatus').innerHTML = `<span class="text-emerald-400">Successfully imported ${count} trades! Switch to the "Trade Journal Log" tab to view them.</span>`;
+        showToast(`Successfully imported ${count} trades from CSV.`);
+      };
+      reader.readAsText(file);
+    }
+
+    // --- RENDER JOURNAL ---
+    function renderJournal() {
+      const search = document.getElementById('filterSearch').value.toLowerCase();
+      const setupFilter = document.getElementById('filterSetup').value;
+      const sessionFilter = document.getElementById('filterSession').value;
+      const violFilter = document.getElementById('filterViolation').value;
+      const reviewFilter = document.getElementById('filterReview').value;
+
+      const filtered = trades.filter(t => {
+        if (setupFilter !== 'ALL' && t.setup !== setupFilter) return false;
+        if (sessionFilter !== 'ALL' && t.session !== sessionFilter) return false;
+        if (violFilter === 'CLEAN' && t.violations?.length > 0) return false;
+        if (violFilter === 'VIOLATION' && (!t.violations || t.violations.length === 0)) return false;
+        if (reviewFilter === 'REVIEWED' && !t.review) return false;
+        if (reviewFilter === 'UNREVIEWED' && t.review) return false;
+
+        if (search) {
+          const txt = (t.setup + ' ' + t.session + ' ' + t.scoreReason + ' ' + t.emotion + ' ' + (t.violations||[]).join(' ')).toLowerCase();
+          if (!txt.includes(search)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('filteredCountLabel').textContent = `Showing ${filtered.length} of ${trades.length} trades`;
+
+      const tbody = document.getElementById('journalTableBody');
+      const emptyState = document.getElementById('emptyState');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      tbody.innerHTML = filtered.map(t => {
+        const isPos = t.rResult >= 0;
+        const rColor = isPos ? 'text-emerald-400' : 'text-rose-400';
+        const hasViol = t.violations && t.violations.length > 0;
+        
+        let scoreBadgeColor = 'bg-slate-800 text-slate-300 border-slate-700';
+        if (t.score >= 8) scoreBadgeColor = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+        else if (t.score >= 6) scoreBadgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+        else scoreBadgeColor = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+
+        const violHtml = hasViol 
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40" title="${t.violations.join(', ')}">Violation (${t.violations.length})</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Clean</span>`;
+
+        const reviewHtml = t.review
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Audited</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">Pending</span>`;
+
+        const imgHtml = t.screenshot 
+          ? `<a href="${t.screenshot}" target="_blank" class="text-emerald-400 hover:underline font-mono">View</a>` 
+          : `<span class="text-slate-600">—</span>`;
+
+        return `
+          <tr class="hover:bg-slate-900/50 transition">
+            <td class="py-3 px-3.5 whitespace-nowrap">
+              <div class="font-mono text-white font-medium">${t.date.replace('T', ' ')}</div>
+              <div class="text-[11px] text-slate-400">${t.session}</div>
+            </td>
+            <td class="py-3 px-3.5">
+              <div class="font-bold text-slate-200">${t.setup}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${t.instrument || 'MGC'} | ${t.phase}</div>
+            </td>
+            <td class="py-3 px-3.5 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-mono text-xs font-bold ${scoreBadgeColor}">
+                ${t.score}/10
+              </span>
+              <div class="text-[11px] text-slate-400 mt-1 max-w-[200px] truncate" title="${t.scoreReason || ''}">${t.scoreReason || 'No reasoning logged'}</div>
+            </td>
+            <td class="py-3 px-3.5 font-mono text-slate-300 whitespace-nowrap">
+              <div>E: ${t.entry} | S: ${t.stop}</div>
+              <div class="text-[11px] text-slate-400">T1: ${t.t1 ?? '—'} | Exit: ${t.exit}</div>
+            </td>
+            <td class="py-3 px-3.5 text-right font-mono font-bold tabular-nums ${rColor} whitespace-nowrap">
+              ${isPos ? '+' : ''}${t.rResult.toFixed(2)}R
+            </td>
+            <td class="py-3 px-3.5 text-center whitespace-nowrap">
+              ${imgHtml}
+            </td>
+            <td class="py-3 px-3.5 whitespace-nowrap">
+              ${violHtml}
+              <div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[140px]" title="${t.violationNotes}">${t.violationNotes || ''}</div>
+            </td>
+            <td class="py-3 px-3.5 text-slate-300 whitespace-nowrap">
+              ${t.emotion || 'Calm'}
+            </td>
+            <td class="py-3 px-3.5 text-center whitespace-nowrap">
+              ${reviewHtml}
+            </td>
+            <td class="py-3 px-3.5 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1.5">
+                <button onclick="openTradeModal(${t.id})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium cursor-pointer">Edit</button>
+                <button onclick="deleteTrade(${t.id})" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[11px] font-medium cursor-pointer">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- KPI & ANALYTICS CALCULATIONS ---
+    function renderKPIs() {
+      const total = trades.length;
+      document.getElementById('kpiTotalTrades').textContent = total;
+
+      if (total === 0) {
+        document.getElementById('kpiWinRate').textContent = '0.0%';
+        document.getElementById('kpiAvgWin').textContent = '+0.00R';
+        document.getElementById('kpiAvgLoss').textContent = '-0.00R';
+        document.getElementById('kpiExpectancy').textContent = '0.00R';
+        document.getElementById('kpiTotalR').textContent = 'Net: 0.00R';
+        document.getElementById('kpiCompliance').textContent = '100%';
+        document.getElementById('kpiViolationsCount').textContent = '0 rule violations';
+        document.getElementById('kpiSampleSub').textContent = '0W / 0L / 0BE';
+        document.getElementById('unreviewedBadge').textContent = '0';
+        return;
+      }
+
+      const wins = trades.filter(t => t.rResult > 0);
+      const losses = trades.filter(t => t.rResult < 0);
+      const bes = trades.filter(t => t.rResult === 0);
+
+      document.getElementById('kpiSampleSub').textContent = `${wins.length}W / ${losses.length}L / ${bes.length}BE`;
+
+      const closedCount = wins.length + losses.length;
+      const winRate = closedCount > 0 ? (wins.length / closedCount) * 100 : 0;
+      document.getElementById('kpiWinRate').textContent = winRate.toFixed(1) + '%';
+
+      const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.rResult, 0) / wins.length : 0;
+      const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.rResult, 0) / losses.length) : 0;
+
+      document.getElementById('kpiAvgWin').textContent = `+${avgWin.toFixed(2)}R`;
+      document.getElementById('kpiAvgLoss').textContent = `-${avgLoss.toFixed(2)}R`;
+
+      const winProb = closedCount > 0 ? wins.length / closedCount : 0;
+      const lossProb = closedCount > 0 ? losses.length / closedCount : 0;
+      const expectancy = (winProb * avgWin) - (lossProb * avgLoss);
+
+      const expEl = document.getElementById('kpiExpectancy');
+      expEl.textContent = (expectancy >= 0 ? '+' : '') + expectancy.toFixed(2) + 'R';
+      expEl.className = 'text-2xl font-bold font-mono tabular-nums ' + (expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400');
+
+      const netR = trades.reduce((s, t) => s + t.rResult, 0);
+      const netEl = document.getElementById('kpiTotalR');
+      netEl.textContent = `Net: ${netR >= 0 ? '+' : ''}${netR.toFixed(2)}R`;
+
+      const violTrades = trades.filter(t => t.violations && t.violations.length > 0);
+      const complianceRate = ((total - violTrades.length) / total) * 100;
+      document.getElementById('kpiCompliance').textContent = complianceRate.toFixed(0) + '%';
+      document.getElementById('kpiViolationsCount').textContent = `${violTrades.length} trades with violations`;
+
+      const unreviewedCount = trades.filter(t => !t.review).length;
+      document.getElementById('unreviewedBadge').textContent = unreviewedCount;
+    }
+
+    function renderAnalytics() {
+      renderKPIs();
+
+      // 1. Setup Breakdown Table
+      const setupsList = ['Setup A', 'Setup A (Mirror)', 'Setup B', 'Setup B (Mirror)', 'Setup C', 'Setup C (Mirror)'];
+      const setupBody = document.getElementById('setupBreakdownBody');
+      setupBody.innerHTML = setupsList.map(sName => {
+        const sub = trades.filter(t => t.setup === sName);
+        if (sub.length === 0) return '';
+        const wins = sub.filter(t => t.rResult > 0);
+        const losses = sub.filter(t => t.rResult < 0);
+        const closed = wins.length + losses.length;
+        const wr = closed > 0 ? (wins.length / closed) * 100 : 0;
+        const avgW = wins.length ? wins.reduce((s,t)=>s+t.rResult,0)/wins.length : 0;
+        const avgL = losses.length ? Math.abs(losses.reduce((s,t)=>s+t.rResult,0)/losses.length) : 0;
+        const exp = closed > 0 ? ((wins.length/closed)*avgW) - ((losses.length/closed)*avgL) : 0;
+        const pct100 = Math.min(100, (sub.length / 100) * 100);
+
+        return `
+          <tr class="border-b border-slate-800/50">
+            <td class="py-2.5 pr-3 font-semibold text-slate-200">${sName}</td>
+            <td class="py-2.5 px-2">
+              <div>${sub.length}/100</div>
+              <div class="w-16 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${pct100}%"></div></div>
+            </td>
+            <td class="py-2.5 px-2 text-right">${wr.toFixed(0)}%</td>
+            <td class="py-2.5 px-2 text-right text-emerald-400">+${avgW.toFixed(2)}R</td>
+            <td class="py-2.5 px-2 text-right text-rose-400">-${avgL.toFixed(2)}R</td>
+            <td class="py-2.5 pl-2 text-right font-bold ${exp >= 0 ? 'text-emerald-400':'text-rose-400'}">${exp >= 0 ? '+' : ''}${exp.toFixed(2)}R</td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="6" class="py-4 text-center text-slate-500 font-sans">No setup data logged yet.</td></tr>`;
+
+      // 2. Scorecard Tier Table
+      const tiers = [
+        { label: '8–10 Points (Full Size)', fn: s => s >= 8 },
+        { label: '6–7 Points (Half Size)', fn: s => s >= 6 && s < 8 },
+        { label: '0–5 Points (<6 No Trade)', fn: s => s < 6 }
+      ];
+      const tierBody = document.getElementById('scorecardBreakdownBody');
+      tierBody.innerHTML = tiers.map(tier => {
+        const sub = trades.filter(t => tier.fn(t.score));
+        const wins = sub.filter(t => t.rResult > 0);
+        const losses = sub.filter(t => t.rResult < 0);
+        const closed = wins.length + losses.length;
+        const wr = closed > 0 ? (wins.length / closed) * 100 : 0;
+        const totalR = sub.reduce((s,t)=>s+t.rResult, 0);
+        const avgR = sub.length > 0 ? totalR / sub.length : 0;
+
+        return `
+          <tr class="border-b border-slate-800/50">
+            <td class="py-2.5 pr-3 font-semibold text-slate-200">${tier.label}</td>
+            <td class="py-2.5 px-2 text-right">${sub.length}</td>
+            <td class="py-2.5 px-2 text-right">${wr.toFixed(0)}%</td>
+            <td class="py-2.5 px-2 text-right ${avgR >= 0 ? 'text-emerald-400':'text-rose-400'}">${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R</td>
+            <td class="py-2.5 pl-2 text-right font-bold ${totalR >= 0 ? 'text-emerald-400':'text-rose-400'}">${totalR >= 0 ? '+' : ''}${totalR.toFixed(2)}R</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 3. Session Table
+      const sessionsList = ['COMEX / RTH', 'London', 'Globex / Asia', 'Post-Settlement'];
+      const sessBody = document.getElementById('sessionBreakdownBody');
+      sessBody.innerHTML = sessionsList.map(sess => {
+        const sub = trades.filter(t => t.session === sess);
+        if (sub.length === 0) return '';
+        const wins = sub.filter(t => t.rResult > 0);
+        const losses = sub.filter(t => t.rResult < 0);
+        const closed = wins.length + losses.length;
+        const wr = closed > 0 ? (wins.length / closed) * 100 : 0;
+        const netR = sub.reduce((s,t)=>s+t.rResult, 0);
+        const avgW = wins.length ? wins.reduce((s,t)=>s+t.rResult,0)/wins.length : 0;
+        const avgL = losses.length ? Math.abs(losses.reduce((s,t)=>s+t.rResult,0)/losses.length) : 0;
+        const exp = closed > 0 ? ((wins.length/closed)*avgW) - ((losses.length/closed)*avgL) : 0;
+
+        return `
+          <tr class="border-b border-slate-800/50">
+            <td class="py-2.5 pr-3 font-semibold text-slate-200">${sess}</td>
+            <td class="py-2.5 px-2 text-right">${sub.length}</td>
+            <td class="py-2.5 px-2 text-right">${wr.toFixed(0)}%</td>
+            <td class="py-2.5 px-2 text-right ${exp >= 0 ? 'text-emerald-400':'text-rose-400'}">${exp >= 0 ? '+' : ''}${exp.toFixed(2)}R</td>
+            <td class="py-2.5 pl-2 text-right font-bold ${netR >= 0 ? 'text-emerald-400':'text-rose-400'}">${netR >= 0 ? '+' : ''}${netR.toFixed(2)}R</td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="5" class="py-4 text-center text-slate-500 font-sans">No session data logged yet.</td></tr>`;
+
+      // 4. Process vs Outcome Matrix
+      const goodWins = trades.filter(t => (!t.violations || t.violations.length === 0) && t.rResult > 0);
+      const goodLosses = trades.filter(t => (!t.violations || t.violations.length === 0) && t.rResult <= 0);
+      const badWins = trades.filter(t => t.violations && t.violations.length > 0 && t.rResult > 0);
+      const badLosses = trades.filter(t => t.violations && t.violations.length > 0 && t.rResult <= 0);
+
+      const matrixGrid = document.getElementById('processMatrixGrid');
+      matrixGrid.innerHTML = `
+        <div class="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+          <div class="text-emerald-300 font-bold mb-1">Good Trade & Win (${goodWins.length})</div>
+          <div class="text-[11px] text-slate-400 mb-2">Compliant read & execution</div>
+          <div class="font-mono text-emerald-400 font-bold">${goodWins.reduce((s,t)=>s+t.rResult,0).toFixed(2)}R Net</div>
+        </div>
+        <div class="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <div class="text-amber-300 font-bold mb-1">Unpaid Problem (${badWins.length})</div>
+          <div class="text-[11px] text-slate-400 mb-2">Rule violation won (Dangerous)</div>
+          <div class="font-mono text-amber-400 font-bold">${badWins.reduce((s,t)=>s+t.rResult,0).toFixed(2)}R Net</div>
+        </div>
+        <div class="p-3.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+          <div class="text-cyan-300 font-bold mb-1">Good Trade, Unlucky Loss (${goodLosses.length})</div>
+          <div class="text-[11px] text-slate-400 mb-2">Compliant read, adverse outcome</div>
+          <div class="font-mono text-cyan-400 font-bold">${goodLosses.reduce((s,t)=>s+t.rResult,0).toFixed(2)}R Net</div>
+        </div>
+        <div class="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30">
+          <div class="text-rose-300 font-bold mb-1">Bad Trade & Loss (${badLosses.length})</div>
+          <div class="text-[11px] text-slate-400 mb-2">Rule violation & lost (Expected)</div>
+          <div class="font-mono text-rose-400 font-bold">${badLosses.reduce((s,t)=>s+t.rResult,0).toFixed(2)}R Net</div>
         </div>
       `;
-    }).join('');
-
-    // Score tiers
-    const tiers = [
-      { label: '8–10 (Full Size)', fn: t => t.score >= 8 },
-      { label: '6–7 (Half Size)', fn: t => t.score >= 6 && t.score <= 7 },
-      { label: '0–5 (No Trade Threshold)', fn: t => t.score < 6 }
-    ];
-    document.getElementById('scoreTierBody').innerHTML = tiers.map(tr => {
-      const sub = trades.filter(tr.fn);
-      const st = calcStats(sub);
-      return `<tr><td>${tr.label}</td><td>${st.count}</td><td>${st.winRate.toFixed(1)}%</td><td class="${st.exp >= 0 ? 'pos' : 'neg'}">${st.exp >= 0 ? '+' : ''}${st.exp.toFixed(2)}R</td></tr>`;
-    }).join('');
-
-    // Process vs Outcome Matrix
-    const matrix = [
-      { label: 'Good Trade (No Violation + Win)', fn: t => !t.hasViolation && t.rResult > 0 },
-      { label: 'Good Trade, Unlucky Outcome (No Violation + Loss)', fn: t => !t.hasViolation && t.rResult <= 0 },
-      { label: 'Unpaid Problem (Rule Violation + Win)', fn: t => t.hasViolation && t.rResult > 0 },
-      { label: 'Bad Trade (Rule Violation + Loss)', fn: t => t.hasViolation && t.rResult <= 0 }
-    ];
-    document.getElementById('matrixBody').innerHTML = matrix.map(m => {
-      const sub = trades.filter(m.fn);
-      const sumR = sub.reduce((s, t) => s + t.rResult, 0);
-      return `<tr><td>${m.label}</td><td>${sub.length}</td><td class="${sumR >= 0 ? 'pos' : 'neg'}">${sumR >= 0 ? '+' : ''}${sumR.toFixed(2)}R</td></tr>`;
-    }).join('');
-  }
-
-  // Weekly reviews
-  function renderReviews() {
-    const container = document.getElementById('reviewsList');
-    if (!reviews.length) {
-      container.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;">No weekly reviews saved yet.</p>';
-      return;
     }
-    container.innerHTML = reviews.map(r => `
-      <div class="score-box" style="margin-bottom:0.75rem;">
-        <strong>Week Ending: ${r.week}</strong>
-        <div style="font-size:0.85rem;margin-top:0.35rem;"><strong>1. Read:</strong> ${r.read}</div>
-        <div style="font-size:0.85rem;"><strong>2. Execution:</strong> ${r.exec}</div>
-        <div style="font-size:0.85rem;"><strong>3. Lucky/Unlucky:</strong> ${r.luck}</div>
-      </div>
-    `).join('');
-  }
 
-  document.getElementById('saveReviewBtn').addEventListener('click', () => {
-    const rev = {
-      week: document.getElementById('revWeek').value,
-      read: document.getElementById('revRead').value.trim(),
-      exec: document.getElementById('revExec').value.trim(),
-      luck: document.getElementById('revLuck').value.trim()
-    };
-    if (!rev.read && !rev.exec && !rev.luck) return;
-    reviews.unshift(rev);
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
-    document.getElementById('revRead').value = '';
-    document.getElementById('revExec').value = '';
-    document.getElementById('revLuck').value = '';
-    renderReviews();
-  });
+    // --- WEEKLY PROCESS REVIEW ---
+    function renderWeeklyReview() {
+      const onlyPending = document.getElementById('reviewOnlyPending').checked;
+      const listContainer = document.getElementById('weeklyReviewList');
 
-  // Exports
-  document.getElementById('exportCsvBtn').addEventListener('click', () => {
-    const headers = ['Date','Phase','Session','Setup','Direction','Score','ScoreReason','Entry','Stop','T1','T2','Exit','R_Result','Violation','ViolationsList','Emotion'];
-    const rows = trades.map(t => [
-      t.date, t.phase, t.session, t.setup, t.direction, t.score,
-      `"${(t.scoreReason || '').replace(/"/g, '""')}"`,
-      t.entry, t.stop, t.t1 ?? '', t.t2 ?? '', t.exit, t.rResult,
-      t.hasViolation ? 'Yes' : 'No',
-      `"${[...t.violations, t.violationNotes].filter(Boolean).join('; ').replace(/"/g, '""')}"`,
-      `"${(t.emotion || '').replace(/"/g, '""')}"`
-    ].join(','));
-    const blob = new Blob([[headers.join(','), ...rows].join('\\n')], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Order_Flow_Playbook_Journal.csv';
-    a.click();
-  });
+      const targetTrades = onlyPending ? trades.filter(t => !t.review) : trades;
 
-  document.getElementById('exportJsonBtn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ trades, reviews }, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Order_Flow_Playbook_Backup.json';
-    a.click();
-  });
-
-  document.getElementById('importJsonBtn').addEventListener('click', () => document.getElementById('importJsonInput').click());
-  document.getElementById('importJsonInput').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (Array.isArray(data.trades)) {
-          trades = data.trades;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
-        }
-        if (Array.isArray(data.reviews)) {
-          reviews = data.reviews;
-          localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
-        }
-        renderTrades();
-        renderReviews();
-        renderAnalytics();
-        alert('Backup imported successfully.');
-      } catch (err) {
-        alert('Invalid JSON backup file.');
+      if (targetTrades.length === 0) {
+        listContainer.innerHTML = `<div class="col-span-2 py-12 text-center text-slate-500 text-xs">No trades require review matching your filter.</div>`;
+        return;
       }
-    };
-    reader.readAsText(file);
-  });
 
-  renderTrades();
-  renderReviews();
-</script>
+      listContainer.innerHTML = targetTrades.map(t => {
+        const rev = t.review || { read: '', exec: '', luck: '' };
+        return `
+          <div class="rounded-xl bg-[#111827] border border-slate-800 p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-white text-sm">${t.setup}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300">${t.date.replace('T', ' ')}</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">Score: ${t.score}/10 | Result: <span class="font-mono font-bold ${t.rResult >= 0 ? 'text-emerald-400':'text-rose-400'}">${t.rResult >= 0 ? '+' : ''}${t.rResult.toFixed(2)}R</span></div>
+              </div>
+              <div>
+                ${t.review ? '<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono">Audited</span>' : '<span class="px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono">Needs Audit</span>'}
+              </div>
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="block font-medium text-slate-300 mb-1">1. Was the read correct? (Context, location, footprint, heatmap accuracy)</label>
+                <input type="text" id="revRead_${t.id}" value="${rev.read}" placeholder="Evaluate order flow auction hypothesis..." class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block font-medium text-slate-300 mb-1">2. Was the execution correct? (DOM entry, stop management, scaling at T1)</label>
+                <input type="text" id="revExec_${t.id}" value="${rev.exec}" placeholder="Evaluate operational discipline..." class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block font-medium text-slate-300 mb-1">3. Was the outcome lucky or unlucky? (Key adjustment for next week)</label>
+                <input type="text" id="revLuck_${t.id}" value="${rev.luck}" placeholder="Separate edge from variance..." class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button onclick="saveSingleReview(${t.id})" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer">
+                Save Review Audit
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveSingleReview(id) {
+      const t = trades.find(x => x.id === id);
+      if (!t) return;
+      t.review = {
+        read: document.getElementById(`revRead_${id}`).value,
+        exec: document.getElementById(`revExec_${id}`).value,
+        luck: document.getElementById(`revLuck_${id}`).value
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+      renderKPIs();
+      renderJournal();
+      renderWeeklyReview();
+      showToast('Weekly process review saved for trade.');
+    }
+
+    // --- DATA BACKUP & EXPORT ---
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", `OrderFlow_Playbook_Journal_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+      showToast('JSON backup exported successfully.');
+    }
+
+    function exportCSV() {
+      if (trades.length === 0) {
+        alert('No trades to export.');
+        return;
+      }
+      const headers = ['ID', 'Date', 'Session', 'Setup', 'Instrument', 'Phase', 'Score', 'ScoreReason', 'Entry', 'Stop', 'T1', 'T2', 'Exit', 'Net_R', 'Violations', 'Emotion', 'Reviewed'];
+      const rows = trades.map(t => [
+        t.id,
+        `"${t.date}"`,
+        `"${t.session}"`,
+        `"${t.setup}"`,
+        `"${t.instrument || ''}"`,
+        `"${t.phase || ''}"`,
+        t.score,
+        `"${(t.scoreReason || '').replace(/"/g, '""')}"`,
+        t.entry,
+        t.stop,
+        t.t1 ?? '',
+        t.t2 ?? '',
+        t.exit,
+        t.rResult,
+        `"${(t.violations || []).join('; ')}"`,
+        `"${t.emotion || ''}"`,
+        t.review ? 'Yes' : 'No'
+      ]);
+
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `OrderFlow_Playbook_Journal_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast('CSV spreadsheet exported successfully.');
+    }
+
+    function importJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (Array.isArray(parsed)) {
+            trades = parsed;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+            renderKPIs();
+            renderJournal();
+            renderAnalytics();
+            renderWeeklyReview();
+            checkSampleNotice();
+            showToast('Journal backup imported successfully.');
+          } else {
+            alert('Invalid JSON format.');
+          }
+        } catch (err) {
+          alert('Error parsing JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function promptResetAll() {
+      if (!confirm('WARNING: This will delete ALL logged trades in your local storage. Are you sure?')) return;
+      trades = [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+      renderKPIs();
+      renderJournal();
+      renderAnalytics();
+      renderWeeklyReview();
+      checkSampleNotice();
+      showToast('All journal data has been reset.');
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs shadow-2xl flex items-center gap-2 animate-bounce';
+      toast.innerHTML = `<svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+  </script>
 </body>
 </html>
-"""
