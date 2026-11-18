@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Flow Playbook — Trading Journal (NinjaTrader 8 Edition)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            terminal: {
+              bg: '#0b0f17',
+              panel: '#111827',
+              card: '#131c2e',
+              border: '#1e293b',
+              hover: '#1a253a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b0f17;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Custom scrollbar for institutional terminal feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+
+  <!-- Top Navigation & Training Plan Tracker -->
+  <header class="sticky top-0 z-30 bg-[#0b0f17]/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/40 flex items-center justify-center">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">ORDER FLOW PLAYBOOK</h1>
+              <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">NT8 Order Flow+</span>
+            </div>
+            <p class="text-xs text-slate-400">Section 14 Rule-Based Trading Journal &amp; Section 10 Confluence Scorecard (GC / MGC)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Training Plan Phase Selector (Section 14) -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 mr-1">Training Phase:</span>
+        <div id="phaseSelector" class="inline-flex flex-wrap rounded-lg bg-slate-900/90 p-1 border border-slate-800 gap-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Primary Actions -->
+      <div class="flex items-center gap-2">
+        <button onclick="openTradeModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-emerald-950/50 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Log Trade
+        </button>
+        <div class="relative inline-block">
+          <button onclick="toggleDataMenu()" id="dataMenuBtn" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition cursor-pointer">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Data
+          </button>
+          <div id="dataMenu" class="hidden absolute right-0 mt-2 w-52 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1.5 z-40">
+            <button onclick="exportJSON()" class="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between">
+              <span>Export Backup (JSON)</span>
+              <span class="font-mono text-[10px] text-slate-400">.json</span>
+            </button>
+            <button onclick="exportCSV()" class="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between">
+              <span>Export Spreadsheet (CSV)</span>
+              <span class="font-mono text-[10px] text-slate-400">.csv</span>
+            </button>
+            <label class="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between cursor-pointer">
+              <span>Import JSON Backup</span>
+              <span class="font-mono text-[10px] text-emerald-400">Load</span>
+              <input type="file" accept=".json" onchange="importJSON(event)" class="hidden" />
+            </label>
+            <div class="my-1 border-t border-slate-800"></div>
+            <button onclick="clearSampleTrades()" class="w-full text-left px-3.5 py-2 text-xs text-amber-400 hover:bg-slate-800">
+              Clear Sample Trades
+            </button>
+            <button onclick="promptResetAll()" class="w-full text-left px-3.5 py-2 text-xs text-rose-400 hover:bg-slate-800">
+              Reset All Journal Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Phase Guidance Banner -->
+    <div id="phaseBanner" class="bg-slate-900/60 border-t border-slate-800/80 px-4 sm:px-6 py-2">
+      <div class="max-w-[1600px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 text-slate-300">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="phaseGoalText" class="font-medium"></span>
+        </div>
+        <div class="text-slate-400 font-mono text-[11px]" id="phaseExitCriteria"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast / Status Banner -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Sample Data Notice (shown only when sample trades exist) -->
+    <div id="sampleNotice" class="hidden rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-start sm:items-center gap-2.5 text-xs text-amber-200">
+        <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span><strong>Illustrative Sample Trades Active:</strong> Pre-populated with Setup A (Figure 10) and Setup B (Figure 12) from the playbook so you can inspect R calculations, scorecard grading, and weekly review fields.</span>
+      </div>
+      <button onclick="clearSampleTrades()" class="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition cursor-pointer">
+        Clear Sample Data
+      </button>
+    </div>
+
+    <!-- KPI Summary Cards (Section 11 & 14) -->
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <span>Sample Size</span>
+          <span class="font-mono text-[10px] text-slate-500">Goal: 100/setup</span>
+        </div>
+        <div id="kpiTotalTrades" class="text-2xl font-bold font-mono tabular-nums text-white">0</div>
+        <div id="kpiSampleSub" class="text-[11px] text-slate-400 mt-1 font-mono">0W / 0L / 0BE</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Win Rate</div>
+        <div id="kpiWinRate" class="text-2xl font-bold font-mono tabular-nums text-white">0.0%</div>
+        <div class="text-[11px] text-slate-500 mt-1">Closed trades excl. BE</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Average Win</div>
+        <div id="kpiAvgWin" class="text-2xl font-bold font-mono tabular-nums text-emerald-400">+0.00R</div>
+        <div class="text-[11px] text-slate-500 mt-1">Net R-multiple</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Average Loss</div>
+        <div id="kpiAvgLoss" class="text-2xl font-bold font-mono tabular-nums text-rose-400">-0.00R</div>
+        <div class="text-[11px] text-slate-500 mt-1">Target &le; 1.00R</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <span>Expectancy (R)</span>
+          <span class="font-mono text-[10px] text-slate-500" title="(Win% × AvgWinR) - (Loss% × AvgLossR)">Sec. 11</span>
+        </div>
+        <div id="kpiExpectancy" class="text-2xl font-bold font-mono tabular-nums text-white">0.00R</div>
+        <div id="kpiTotalR" class="text-[11px] text-slate-400 mt-1 font-mono">Net: 0.00R</div>
+      </div>
+
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-4">
+        <div class="text-xs text-slate-400 mb-1">Rule Compliance</div>
+        <div id="kpiCompliance" class="text-2xl font-bold font-mono tabular-nums text-emerald-400">100%</div>
+        <div id="kpiViolationsCount" class="text-[11px] text-slate-400 mt-1">0 rule violations</div>
+      </div>
+    </section>
+
+    <!-- Main View Switcher Tabs -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      <div class="inline-flex rounded-xl bg-[#111827] p-1 border border-slate-800">
+        <button onclick="switchMainTab('journal')" id="tabBtn-journal" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer bg-slate-800 text-white">
+          Trade Journal Log
+        </button>
+        <button onclick="switchMainTab('analytics')" id="tabBtn-analytics" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200">
+          Setup &amp; Scorecard Analytics
+        </button>
+        <button onclick="switchMainTab('review')" id="tabBtn-review" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
+          <span>Weekly Process Review</span>
+          <span id="unreviewedBadge" class="px-1.5 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0</span>
+        </button>
+      </div>
+
+      <!-- Quick Pre-Trade Rule Reminder -->
+      <div class="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+        <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800">8+ Score = Full Size</span>
+        <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-amber-400">6–7 = Half Size</span>
+        <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-rose-400">&lt;6 = No Trade</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: TRADE JOURNAL LOG (Section 14 One Row Per Trade) -->
+    <section id="view-journal" class="space-y-4">
+      <!-- Filter Bar -->
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-3.5 flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+        <div class="flex flex-wrap items-center gap-2 flex-1">
+          <div class="relative flex-1 min-w-[200px] max-w-xs">
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="filterSearch" type="text" oninput="renderJournal()" placeholder="Search notes, scorecard reasons, emotion..." class="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          </div>
+
+          <select id="filterSetup" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">All Setups (A / B / C)</option>
+            <option value="Setup A">Setup A: Absorption @ VAL (Long)</option>
+            <option value="Setup A (Mirror)">Setup A Mirror: Absorption @ VAH (Short)</option>
+            <option value="Setup B">Setup B: Failed Breakout @ VAH (Short)</option>
+            <option value="Setup B (Mirror)">Setup B Mirror: Failed Breakdown @ VAL (Long)</option>
+            <option value="Setup C">Setup C: LVN Breakout &amp; Retest (Long)</option>
+            <option value="Setup C (Mirror)">Setup C Mirror: LVN Breakdown &amp; Retest (Short)</option>
+          </select>
+
+          <select id="filterSession" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">All Sessions</option>
+            <option value="Globex / Asia">Globex / Asia</option>
+            <option value="London">London (~03:00 ET)</option>
+            <option value="COMEX / RTH">COMEX / RTH (08:20–13:30 ET)</option>
+            <option value="Post-Settlement">Post-Settlement</option>
+          </select>
+
+          <select id="filterViolation" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">Compliance: All</option>
+            <option value="CLEAN">Clean (No Violations)</option>
+            <option value="VIOLATION">Rule Violation Flagged</option>
+          </select>
+
+          <select id="filterReview" onchange="renderJournal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+            <option value="ALL">Review Status: All</option>
+            <option value="REVIEWED">Weekly Reviewed</option>
+            <option value="UNREVIEWED">Needs Review</option>
+          </select>
+        </div>
+
+        <div class="text-xs text-slate-400 font-mono" id="filteredCountLabel">Showing 0 trades</div>
+      </div>
+
+      <!-- Journal Table -->
+      <div class="rounded-xl bg-[#111827] border border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-900/70 text-[11px] font-mono uppercase tracking-wider text-slate-400">
+                <th class="py-3 px-3.5">Date / Session</th>
+                <th class="py-3 px-3.5">Setup &amp; Phase</th>
+                <th class="py-3 px-3.5">Scorecard</th>
+                <th class="py-3 px-3.5">Levels (Entry / Stop / T1 / T2 / Exit)</th>
+                <th class="py-3 px-3.5 text-right">R Result</th>
+                <th class="py-3 px-3.5 text-center">Evidence</th>
+                <th class="py-3 px-3.5">Rule Compliance</th>
+                <th class="py-3 px-3.5">Emotion</th>
+                <th class="py-3 px-3.5 text-center">Review</th>
+                <th class="py-3 px-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="journalTableBody" class="divide-y divide-slate-800/80 text-xs">
+              <!-- Rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="hidden py-14 px-4 text-center">
+          <p class="text-slate-400 text-sm mb-2">No trades match your current filter.</p>
+          <button onclick="openTradeModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer">
+            + Log Your First Trade
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ANALYTICS & SCORECARD VALIDATION (Section 10 & 11) -->
+    <section id="view-analytics" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Breakdown by Setup (100-Trade Sample Tracker) -->
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white">Performance by Setup (100-Trade Sample Goal)</h3>
+              <p class="text-xs text-slate-400 mt-0.5">"Fewer than ~100 logged trades per setup is anecdote. Judge each setup separately." (Sec. 11)</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                  <th class="py-2 pr-3">Setup</th>
+                  <th class="py-2 px-2">Sample</th>
+                  <th class="py-2 px-2 text-right">Win %</th>
+                  <th class="py-2 px-2 text-right">Avg Win</th>
+                  <th class="py-2 px-2 text-right">Avg Loss</th>
+                  <th class="py-2 pl-2 text-right">Expectancy</th>
+                </tr>
+              </thead>
+              <tbody id="setupBreakdownBody" class="divide-y divide-slate-800/70 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Breakdown by Confluence Scorecard Tier (Section 10 Hypothesis Test) -->
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white">Confluence Scorecard Validation (Sec. 10)</h3>
+              <p class="text-xs text-slate-400 mt-0.5">"Check whether higher scores actually performed better, and recalibrate or discard."</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                  <th class="py-2 pr-3">Score Tier</th>
+                  <th class="py-2 px-2 text-right">Trades</th>
+                  <th class="py-2 px-2 text-right">Win %</th>
+                  <th class="py-2 px-2 text-right">Avg R</th>
+                  <th class="py-2 pl-2 text-right">Total R</th>
+                </tr>
+              </thead>
+              <tbody id="scorecardBreakdownBody" class="divide-y divide-slate-800/70 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Breakdown by Session (Section 12) -->
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <h3 class="text-sm font-bold text-white mb-1">Performance by Session Window (Sec. 12)</h3>
+          <p class="text-xs text-slate-400 mb-4">Evaluate liquidity regimes across Globex, London, and COMEX RTH.</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                  <th class="py-2 pr-3">Session</th>
+                  <th class="py-2 px-2 text-right">Trades</th>
+                  <th class="py-2 px-2 text-right">Win %</th>
+                  <th class="py-2 px-2 text-right">Expectancy</th>
+                  <th class="py-2 pl-2 text-right">Net R</th>
+                </tr>
+              </thead>
+              <tbody id="sessionBreakdownBody" class="divide-y divide-slate-800/70 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Process vs Outcome Matrix (Section 14 Reviewing) -->
+        <div class="rounded-xl bg-[#111827] border border-slate-800 p-5">
+          <h3 class="text-sm font-bold text-white mb-1">Process vs. Outcome Matrix (Sec. 14)</h3>
+          <p class="text-xs text-slate-400 mb-4">"A losing trade that followed the rules is a good trade. A winning trade that broke them is a problem you have not paid for yet."</p>
+          <div id="processMatrixGrid" class="grid grid-cols-2 gap-3 text-xs">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: WEEKLY PROCESS REVIEW (Section 14 Reviewing) -->
+    <section id="view-review" class="hidden space-y-4">
+      <div class="rounded-xl bg-[#111827] border border-slate-800 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white">Weekly Process Review Protocol (Section 14)</h2>
+          <p class="text-xs text-slate-400 mt-1">Separate three questions for every logged trade: <span class="text-slate-200 font-medium">1) Was the read correct?</span> <span class="text-slate-200 font-medium">2) Was the execution correct?</span> <span class="text-slate-200 font-medium">3) Was the outcome lucky or unlucky?</span></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="reviewOnlyPending" onchange="renderWeeklyReview()" class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0" />
+            <span>Show unreviewed only</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="weeklyReviewList" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Cards injected by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TRADE ENTRY / EDIT MODAL -->
+  <div id="tradeModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="min-h-screen px-3 sm:px-6 py-6 flex items-center justify-center">
+      <div class="w-full max-w-5xl rounded-2xl bg-[#111827] border border-slate-700 shadow-2xl overflow-hidden">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <h2 id="modalTitle" class="text-base sm:text-lg font-bold text-white">Log Order Flow Trade</h2>
+            <p class="text-xs text-slate-400">Record all Section 14 journal fields and Section 10 scorecard points before/after execution.</p>
+          </div>
+          <button onclick="closeTradeModal()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Form Body -->
+        <form id="tradeForm" onsubmit="saveTrade(event)" class="p-6 space-y-6 max-h-[82vh] overflow-y-auto">
+          <input type="hidden" id="editTradeId" />
+
+          <!-- Section 1: Date, Session, Setup, Instrument, Training Phase -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">1</span>
+              <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Context, Session &amp; Setup Identification</h3>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Date &amp; Time *</label>
+                <input type="datetime-local" id="fDate" required class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Session (Sec. 12) *</label>
+                <select id="fSession" required class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="COMEX / RTH">COMEX / RTH (08:20–13:30 ET)</option>
+                  <option value="London">London (~03:00 ET)</option>
+                  <option value="Globex / Asia">Globex / Asia</option>
+                  <option value="Post-Settlement">Post-Settlement</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Playbook Setup *</label>
+                <select id="fSetup" onchange="onSetupChange()" required class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="Setup A">Setup A: Absorption @ VAL (Long)</option>
+                  <option value="Setup A (Mirror)">Setup A Mirror: Absorption @ VAH (Short)</option>
+                  <option value="Setup B">Setup B: Failed Breakout @ VAH (Short)</option>
+                  <option value="Setup B (Mirror)">Setup B Mirror: Failed Breakdown @ VAL (Long)</option>
+                  <option value="Setup C">Setup C: LVN Breakout &amp; Retest (Long)</option>
+                  <option value="Setup C (Mirror)">Setup C Mirror: LVN Breakdown &amp; Retest (Short)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Instrument &amp; Size</label>
+                <input type="text" id="fInstrument" value="MGC (3 cts)" placeholder="e.g. MGC (3 cts)" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Training Phase (Sec. 14)</label>
+                <select id="fPhase" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="Phase 1: Vocabulary">Phase 1: Vocabulary (Replay)</option>
+                  <option value="Phase 2: Rules on Replay">Phase 2: Rules on Replay</option>
+                  <option value="Phase 3: Sim, Live Data">Phase 3: Sim101, Live Data</option>
+                  <option value="Phase 4: Live, Min Size">Phase 4: Live, Min Size (1 MGC)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Interactive Confluence Scorecard (Section 10) -->
+          <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-4 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">2</span>
+                <div>
+                  <h3 class="text-xs font-mono uppercase tracking-wider text-white font-semibold">Confluence Scorecard (Section 10 — 0 to 10 Points)</h3>
+                  <p class="text-[11px] text-slate-400">Log the exact score and the reason for each point awarded.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <div class="text-[10px] font-mono uppercase text-slate-400">Total Score</div>
+                  <div id="liveScoreDisplay" class="text-xl font-bold font-mono text-emerald-400">0 / 10</div>
+                </div>
+                <div id="liveSizingBadge" class="px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                  &lt;6: NO TRADE
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <!-- Location (0-2) -->
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">1. Location (0–2)</label>
+                  <span id="lblScoreLocation" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scLocation" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Mid-range, no level (Noise)</option>
+                  <option value="1">1 — Minor level</option>
+                  <option value="2">2 — Key level (VAH/VAL, LVN edge, naked POC + HTF)</option>
+                </select>
+              </div>
+
+              <!-- Footprint Trigger (0-3) -->
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">2. Footprint Trigger (0–3)</label>
+                  <span id="lblScoreFootprint" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scFootprint" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — None</option>
+                  <option value="1">1 — Delta flip only</option>
+                  <option value="2">2 — Absorption or exhaustion evidence</option>
+                  <option value="3">3 — Absorption/exhaustion + 3+ stacked imbalances</option>
+                </select>
+              </div>
+
+              <!-- Heatmap Validation (0-2) -->
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">3. Heatmap Validation (0–2)</label>
+                  <span id="lblScoreHeatmap" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scHeatmap" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Absent or contradictory (pulled)</option>
+                  <option value="1">1 — Liquidity present, untested</option>
+                  <option value="2">2 — Defended/reloaded (resp.) or consumed/air pocket (init.)</option>
+                </select>
+              </div>
+
+              <!-- Context (0-2) -->
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">4. Context (0–2)</label>
+                  <span id="lblScoreContext" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scContext" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Fights the session structure</option>
+                  <option value="1">1 — Neutral</option>
+                  <option value="2">2 — Aligned (balance for resp., accepted imb. for init.)</option>
+                </select>
+              </div>
+
+              <!-- Risk (0-1) -->
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-xs font-semibold text-slate-200">5. Risk &amp; R:R Gate (0–1)</label>
+                  <span id="lblScoreRisk" class="font-mono text-xs text-emerald-400 font-bold">0 pts</span>
+                </div>
+                <select id="scRisk" onchange="recalcScorecard()" class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200">
+                  <option value="0">0 — Stop not structural or T1 &lt; 1.5R</option>
+                  <option value="1">1 — Structural stop and T1 at least 1.5R</option>
+                </select>
+              </div>
+
+              <!-- Reason for each point (Section 14 required field) -->
+              <div class="p-3 rounded-lg bg-[#0b0f17] border border-slate-800">
+                <label class="block text-xs font-semibold text-slate-200 mb-1.5">Reason for Each Point *</label>
+                <textarea id="fScoreReasons" rows="2" required placeholder="e.g. Loc(2): Prior-day VAL + weekly LVN; FP(3): -276 delta absorption + 3 stacked buy imb; HM(2): Bid band held..." class="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Entry, Stop, T1, T2, Exit, R Result -->
+          <div class="space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">3</span>
+                <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Execution Levels &amp; R-Multiple Calculation (Section 11 &amp; 14)</h3>
+              </div>
+              <div id="plannedRPreview" class="text-xs font-mono text-slate-400">
+                Planned T1: <span class="text-white">--</span> | Planned T2: <span class="text-white">--</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Direction *</label>
+                <select id="fDirection" onchange="recalcR()" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500">
+                  <option value="Long">Long</option>
+                  <option value="Short">Short</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Entry Price *</label>
+                <input type="number" step="any" id="fEntry" oninput="recalcR()" required placeholder="3250.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Stop Price *</label>
+                <input type="number" step="any" id="fStop" oninput="recalcR()" required placeholder="3246.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Target 1 (T1)</label>
+                <input type="number" step="any" id="fT1" oninput="recalcR()" placeholder="3258.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Target 2 (T2)</label>
+                <input type="number" step="any" id="fT2" oninput="recalcR()" placeholder="3265.0" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1">Avg Exit Price *</label>
+                <input type="number" step="any" id="fExit" oninput="recalcR()" required placeholder="3258.5" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] font-medium text-slate-400">Net R Result *</label>
+                  <span class="text-[10px] text-slate-500 font-mono">incl. fees</span>
+                </div>
+                <input type="number" step="0.01" id="fRResult" required placeholder="2.00" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-emerald-500/50 text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-400" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Screenshot Evidence (Volumetric Bars + Depth Map + Profile) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">4</span>
+                <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Trigger Screenshot (Volumetric Bars, Depth Map &amp; Volume Profile)</h3>
+              </div>
+              <span class="text-[11px] text-slate-400">"Review evidence. Memory lies." — Paste (Ctrl+V) or upload</span>
+            </div>
+
+            <div id="dropZone" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" class="rounded-xl border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-900/50 p-4 text-center transition">
+              <div id="screenshotEmptyPrompt" class="space-y-2">
+                <p class="text-xs text-slate-300">Drag &amp; drop your NinjaTrader 8 chart screenshot here, press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px]">Ctrl+V</kbd> to paste from clipboard, or</p>
+                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 cursor-pointer">
+                  <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span>Choose Image File</span>
+                  <input type="file" accept="image/*" onchange="handleFileSelect(event)" class="hidden" />
+                </label>
+              </div>
+              <div id="screenshotPreviewBox" class="hidden flex flex-col sm:flex-row items-center justify-between gap-4">
+                <img id="screenshotPreviewImg" src="" alt="Trigger chart screenshot" class="max-h-40 rounded-lg border border-slate-700 object-contain" />
+                <div class="flex flex-col gap-2">
+                  <span class="text-[11px] font-mono text-emerald-400">Screenshot attached &amp; compressed</span>
+                  <button type="button" onclick="removeScreenshot()" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs cursor-pointer">
+                    Remove Screenshot
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Rule Violations & Emotional State (Section 13 & 14) -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Rule Violations -->
+            <div class="rounded-xl bg-slate-900/70 border border-slate-800 p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">5</span>
+                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Rule Violations (Sec. 13 &amp; 14)</h3>
+                </div>
+                <select id="fHasViolation" onchange="toggleViolationDetails()" class="px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-xs font-semibold text-white">
+                  <option value="No">No — Followed All Rules</option>
+                  <option value="Yes">Yes — Rule Violation</option>
+                </select>
+              </div>
+
+              <div id="violationChecklist" class="hidden space-y-2 pt-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-300">
+                  <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800 cursor-pointer">
+                    <input type="checkbox" name="vType" value="No level within ticks" class="rounded bg-slate-900 border-slate-700 text-rose-500" />
+                    <span>No level within ticks</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800 cursor-pointer">
+                    <input type="checkbox" name="vType" value="Anticipated trigger before bar close" class="rounded bg-slate-900 border-slate-700 text-rose-500" />
+                    <span>Anticipated trigger early</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800 cursor-pointer">
+                    <input type="checkbox" name="vType" value="Traded pulled liquidity" class="rounded bg-slate-900 border-slate-700 text-rose-500" />
+                    <span>Traded pulled liquidity</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800 cursor-pointer">
+                    <input type="checkbox" name="vType" value="Below scorecard threshold (<6)" class="rounded bg-slate-900 border-slate-700 text-rose-500" />
+                    <span>Scorecard &lt; 6 threshold</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800 cursor-pointer">
+                    <input type="checkbox" name="vType" value="Widened stop / no ATM bracket" class="rounded bg-slate-900 border-slate-700 text-rose-500" />
+                    <span>Widened stop / no bracket</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800 cursor-pointer">
+                    <input type="checkbox" name="vType" value="Traded high-impact news release" class="rounded bg-slate-900 border-slate-700 text-rose-500" />
+                    <span>News release window</span>
+                  </label>
+                </div>
+                <input type="text" id="fViolationNote" placeholder="Specify exact violation details..." class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-rose-500/40 text-xs text-rose-200 placeholder-slate-500 focus:outline-none" />
+              </div>
+              <p id="violationCleanMsg" class="text-[11px] text-slate-400">Separates bad trades from bad outcomes. Mark "Yes" even if the trade won.</p>
+            </div>
+
+            <!-- Emotional State Before Entry -->
+            <div class="rounded-xl bg-slate-900/70 border border-slate-800 p-4 space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs flex items-center justify-center font-bold">6</span>
+                <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">Emotional State Before Entry (Sec. 14)</h3>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Pre-Entry State *</label>
+                  <select id="fEmotion" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500">
+                    <option value="Calm & Focused">Calm &amp; Focused (Process-driven)</option>
+                    <option value="Patient / Detached">Patient / Detached</option>
+                    <option value="FOMO / Urgency">FOMO / Fear of missing move</option>
+                    <option value="Revenge / Urge to make it back">Revenge / Urge to make it back</option>
+                    <option value="Hesitant / Second-guessing">Hesitant / Second-guessing</option>
+                    <option value="Overconfident / Euphoric">Overconfident / Size creep</option>
+                    <option value="Fatigued / Distracted">Fatigued / Distracted</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Tilt / Execution Notes</label>
+                  <input type="text" id="fEmotionNote" placeholder="Patterns in tilt show up here..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 7: Weekly Review Fields (Expandable / Integrated) -->
+          <div class="rounded-xl bg-slate-900/50 border border-slate-800 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 font-mono text-xs flex items-center justify-center font-bold">7</span>
+                <h3 class="text-xs font-mono uppercase tracking-wider text-cyan-300 font-semibold">Weekly Review Audit (Section 14 — Optional at Entry)</h3>
+              </div>
+              <span class="text-[11px] text-slate-400">Can also be completed later in the Weekly Process Review tab</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">1. Was the read correct?</label>
+                <select id="fRevRead" class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200">
+                  <option value="Pending">Pending Review</option>
+                  <option value="Yes">Yes — Layers 1–3 aligned</option>
+                  <option value="No">No — Misread auction/level</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">2. Was the execution correct?</label>
+                <select id="fRevExec" class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200">
+                  <option value="Pending">Pending Review</option>
+                  <option value="Yes">Yes — Trigger close, ATM bracket, managed by plan</option>
+                  <option value="No">No — Early/late fill or management error</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">3. Was the outcome lucky or unlucky?</label>
+                <select id="fRevLuck" class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200">
+                  <option value="Pending">Pending Review</option>
+                  <option value="Normal Variance">Normal Variance (Expected outcome)</option>
+                  <option value="Unlucky">Unlucky (Good process, stopped out)</option>
+                  <option value="Lucky">Lucky (Broke rules / saved by spike)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <input type="text" id="fRevNote" placeholder="Weekly review takeaway / hypothesis adjustment..." class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+            </div>
+          </div>
+
+          <!-- Form Footer -->
+          <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+            <button type="button" onclick="closeTradeModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/50 cursor-pointer">
+              Save Trade to Journal
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRADE DETAIL INSPECTOR DRAWER / MODAL -->
+  <div id="detailModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="min-h-screen px-3 sm:px-6 py-6 flex items-center justify-center">
+      <div class="w-full max-w-4xl rounded-2xl bg-[#111827] border border-slate-700 shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+          <div id="detailHeaderTitle" class="text-base font-bold text-white">Trade Inspection</div>
+          <button onclick="closeDetailModal()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div id="detailContent" class="p-6 space-y-5 max-h-[82vh] overflow-y-auto text-xs">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREENSHOT LIGHTBOX MODAL -->
+  <div id="lightboxModal" onclick="closeLightbox()" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out">
+    <div class="max-w-6xl max-h-[92vh] flex flex-col items-center gap-3" onclick="event.stopPropagation()">
+      <img id="lightboxImg" src="" alt="Full-size footprint and depth map screenshot" class="max-h-[84vh] w-auto rounded-xl border border-slate-700 shadow-2xl" />
+      <div class="flex items-center gap-4">
+        <span id="lightboxCaption" class="text-xs font-mono text-slate-300"></span>
+        <button onclick="closeLightbox()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer">Close [Esc]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION MODAL (No browser confirm() per rules) -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="max-w-md w-full rounded-2xl bg-[#111827] border border-slate-700 p-6 space-y-4 shadow-2xl">
+      <h3 id="confirmTitle" class="text-base font-bold text-white">Confirm Action</h3>
+      <p id="confirmMessage" class="text-xs text-slate-300 leading-relaxed"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeConfirmModal()" class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-medium cursor-pointer">Cancel</button>
+        <button id="confirmActionBtn" class="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs text-white font-semibold cursor-pointer">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // STATE & PLAYBOOK CONSTANTS (NinjaTrader 8 Order Flow+ Playbook Sec. 10 & 14)
+    // =========================================================================
+    const STORAGE_KEY = 'ofp_nt8_trading_journal_v1';
+    const PHASE_STORAGE_KEY = 'ofp_nt8_active_phase_v1';
+
+    const TRAINING_PHASES = [
+      {
+        id: 'Phase 1: Vocabulary',
+        short: '1. Vocabulary (1–2w)',
+        goal: 'Market Replay only. Label every bar: delta, imbalances, absorption or exhaustion, level. No trading.',
+        exitCriteria: 'Move on when: Labels hold up consistently when checked the next day.'
+      },
+      {
+        id: 'Phase 2: Rules on Replay',
+        short: '2. Replay Rules (2–3w)',
+        goal: 'Trade setups A to C on Market Replay with full journaling and the scorecard. Include costs.',
+        exitCriteria: 'Move on when: Rule compliance is consistently high & you understand why each loss lost.'
+      },
+      {
+        id: 'Phase 3: Sim, Live Data',
+        short: '3. Sim101 Live (3–4w)',
+        goal: 'Trade the same rules on a live feed on the Sim101 account, in real time.',
+        exitCriteria: 'Move on when: You execute with the DOM without errors & results are stable across days.'
+      },
+      {
+        id: 'Phase 4: Live, Min Size',
+        short: '4. Live 1-MGC (Ongoing)',
+        goal: 'Trade MGC at one-contract size. The goal is data, not money.',
+        exitCriteria: 'Move on when: 100+ trades per setup, positive expectancy after fees, trusted rule adherence.'
+      }
+    ];
+
+    // Illustrative synthetic chart SVG generator for sample trades (Volumetric Bars + Depth Map + Profile)
+    function createSampleChartSVG(setupType) {
+      if (setupType === 'Setup A') {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="840" height="420" viewBox="0 0 840 420">
+          <rect width="840" height="420" fill="#0b0f17"/>
+          <rect x="16" y="16" width="808" height="388" rx="8" fill="#111827" stroke="#1e293b"/>
+          <text x="32" y="42" fill="#e2e8f0" font-family="monospace" font-size="14" font-weight="bold">SAMPLE EVIDENCE: Setup A — Absorption at Prior-Day VAL (Figure 9 &amp; 10)</text>
+          <text x="32" y="62" fill="#94a3b8" font-family="monospace" font-size="11">Layer 1: VAL 3242.0 | Layer 2: Bar 6 Delta -276 absorbed, Bar 7 +86 + 3x Buy Imb | Layer 3: Resting Bid Held</text>
+          <!-- Volume Profile Panel -->
+          <rect x="32" y="80" width="160" height="300" fill="#0f172a" stroke="#1e293b"/>
+          <text x="44" y="100" fill="#94a3b8" font-family="monospace" font-size="11">VOLUME PROFILE</text>
+          <rect x="44" y="125" width="70" height="14" fill="#334155"/><text x="120" y="136" fill="#cbd5e1" font-family="monospace" font-size="10">VAH 3276.0</text>
+          <rect x="44" y="200" width="125" height="18" fill="#0284c7"/><text x="48" y="213" fill="#ffffff" font-family="monospace" font-size="10">POC 3260.0 (T1)</text>
+          <rect x="44" y="295" width="65" height="14" fill="#10b981"/><text x="115" y="306" fill="#10b981" font-family="monospace" font-size="10">VAL 3242.0</text>
+          <!-- Volumetric Footprint Panel -->
+          <rect x="208" y="80" width="310" height="300" fill="#0f172a" stroke="#1e293b"/>
+          <text x="220" y="100" fill="#94a3b8" font-family="monospace" font-size="11">VOLUMETRIC BARS (5m)</text>
+          <rect x="224" y="130" width="125" height="210" rx="4" fill="#1e1b24" stroke="#f43f5e"/>
+          <text x="234" y="150" fill="#fda4af" font-family="monospace" font-size="11" font-weight="bold">Bar 6: The Test</text>
+          <text x="234" y="175" fill="#e2e8f0" font-family="monospace" font-size="11">Vol: 654 | Delta: -276</text>
+          <text x="234" y="195" fill="#f43f5e" font-family="monospace" font-size="11">140 x 30 @ 3239.0</text>
+          <text x="234" y="215" fill="#f43f5e" font-family="monospace" font-size="11">118 x 32 @ 3240.0</text>
+          <text x="234" y="235" fill="#94a3b8" font-family="monospace" font-size="10">Heavy sell aggression</text>
+          <text x="234" y="250" fill="#94a3b8" font-family="monospace" font-size="10">fails to break lower.</text>
+          <rect x="366" y="130" width="136" height="210" rx="4" fill="#0f2922" stroke="#10b981"/>
+          <text x="376" y="150" fill="#6ee7b7" font-family="monospace" font-size="11" font-weight="bold">Bar 7: Trigger</text>
+          <text x="376" y="175" fill="#e2e8f0" font-family="monospace" font-size="11">Vol: 264 | Delta: +86</text>
+          <text x="376" y="195" fill="#10b981" font-family="monospace" font-size="11">9 x 27 (3:1 Buy Imb)</text>
+          <text x="376" y="215" fill="#10b981" font-family="monospace" font-size="11">8 x 30 (3:1 Buy Imb)</text>
+          <text x="376" y="235" fill="#10b981" font-family="monospace" font-size="11">9 x 26 (3:1 Buy Imb)</text>
+          <text x="376" y="260" fill="#a7f3d0" font-family="monospace" font-size="10">Entry @ Close: 3245.0</text>
+          <!-- Depth Map Panel -->
+          <rect x="534" y="80" width="274" height="300" fill="#0f172a" stroke="#1e293b"/>
+          <text x="546" y="100" fill="#94a3b8" font-family="monospace" font-size="11">ORDER FLOW DEPTH MAP</text>
+          <rect x="546" y="305" width="248" height="16" fill="#f59e0b" opacity="0.85"/>
+          <text x="554" y="317" fill="#0b0f17" font-family="monospace" font-size="10" font-weight="bold">RESTING BID WALL HELD / RELOADED</text>
+          <circle cx="620" cy="300" r="14" fill="#f43f5e" opacity="0.75"/>
+          <circle cx="645" cy="302" r="11" fill="#f43f5e" opacity="0.75"/>
+          <circle cx="715" cy="255" r="12" fill="#10b981" opacity="0.8"/>
+          <text x="548" y="352" fill="#94a3b8" font-family="monospace" font-size="10">Red sell bubbles absorbed; price lifts.</text>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+      } else {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="840" height="420" viewBox="0 0 840 420">
+          <rect width="840" height="420" fill="#0b0f17"/>
+          <rect x="16" y="16" width="808" height="388" rx="8" fill="#111827" stroke="#1e293b"/>
+          <text x="32" y="42" fill="#e2e8f0" font-family="monospace" font-size="14" font-weight="bold">SAMPLE EVIDENCE: Setup B — Failed Breakout Above VAH (Figure 11 &amp; 12)</text>
+          <text x="32" y="62" fill="#94a3b8" font-family="monospace" font-size="11">Layer 1: VAH 3276.0 | Layer 2: Bar 6 +101 Delta trapped, Bar 7 -175 Delta + 4x Sell Imb | Layer 3: Ask Wall Held</text>
+          <rect x="32" y="80" width="240" height="300" fill="#0f172a" stroke="#1e293b"/>
+          <text x="44" y="100" fill="#94a3b8" font-family="monospace" font-size="11">DEPTH MAP (ASK WALL)</text>
+          <rect x="44" y="128" width="214" height="16" fill="#f59e0b" opacity="0.9"/>
+          <text x="50" y="140" fill="#0b0f17" font-family="monospace" font-size="10" font-weight="bold">PASSIVE ASK WALL INTACT</text>
+          <circle cx="130" cy="146" r="13" fill="#10b981" opacity="0.8"/>
+          <circle cx="195" cy="195" r="14" fill="#f43f5e" opacity="0.8"/>
+          <text x="44" y="235" fill="#cbd5e1" font-family="monospace" font-size="10">Breakout buyers hit wall,</text>
+          <text x="44" y="250" fill="#cbd5e1" font-family="monospace" font-size="10">fail to extend, trapped.</text>
+          <rect x="288" y="80" width="520" height="300" fill="#0f172a" stroke="#1e293b"/>
+          <text x="304" y="100" fill="#94a3b8" font-family="monospace" font-size="11">VOLUMETRIC BARS: TRAP &amp; REVERSAL</text>
+          <rect x="304" y="125" width="230" height="225" rx="4" fill="#1e293b" stroke="#64748b"/>
+          <text x="316" y="148" fill="#e2e8f0" font-family="monospace" font-size="11" font-weight="bold">Bar 6: Push Above VAH</text>
+          <text x="316" y="172" fill="#10b981" font-family="monospace" font-size="11">Vol: 259 | Delta: +101 (+39%)</text>
+          <text x="316" y="195" fill="#94a3b8" font-family="monospace" font-size="10">20 x 62 @ 3281.0 (Absorbed)</text>
+          <text x="316" y="215" fill="#94a3b8" font-family="monospace" font-size="10">15 x 52 @ 3280.0</text>
+          <rect x="554" y="125" width="236" height="225" rx="4" fill="#27131a" stroke="#f43f5e"/>
+          <text x="566" y="148" fill="#fda4af" font-family="monospace" font-size="11" font-weight="bold">Bar 7: Reversal Inside Value</text>
+          <text x="566" y="172" fill="#f43f5e" font-family="monospace" font-size="11">Vol: 339 | Delta: -175 (-52%)</text>
+          <text x="566" y="195" fill="#fda4af" font-family="monospace" font-size="11">4 Stacked Sell Imbalances</text>
+          <text x="566" y="220" fill="#e2e8f0" font-family="monospace" font-size="10">Entry Short @ Close: 3275.0</text>
+          <text x="566" y="240" fill="#e2e8f0" font-family="monospace" font-size="10">Stop: 3282.5 | T1 POC: 3260.0</text>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+      }
+    }
+
+    const SAMPLE_TRADES = [
+      {
+        id: 'sample-1',
+        isSample: true,
+        date: '2026-11-16T09:42',
+        session: 'COMEX / RTH',
+        setup: 'Setup A',
+        instrument: 'MGC (3 cts)',
+        phase: 'Phase 3: Sim, Live Data',
+        scorecard: {
+          location: 2,
+          footprint: 3,
+          heatmap: 2,
+          context: 2,
+          risk: 1,
+          total: 10,
+          reasons: 'Loc(2): Prior-day VAL 3242.0 in balanced range; FP(3): Bar 6 absorbed -276 delta, Bar 7 retest on 40% vol + 3 stacked buy imb; HM(2): Resting bid wall reloaded under red bubbles; Ctx(2): Balanced rotation; Risk(1): Structural stop 1.5 pts below low, T1 POC = 2.00R.'
+        },
+        direction: 'Long',
+        entry: 3245.0,
+        stop: 3237.5,
+        t1: 3260.0,
+        t2: 3276.0,
+        exit: 3264.5,
+        rResult: 2.60,
+        screenshot: createSampleChartSVG('Setup A'),
+        hasViolation: 'No',
+        violations: [],
+        violationNote: '',
+        emotion: 'Calm & Focused',
+        emotionNote: 'Waited for Bar 7 close above midpoint before clicking SuperDOM buy.',
+        review: {
+          readCorrect: 'Yes',
+          execCorrect: 'Yes',
+          luck: 'Normal Variance',
+          note: 'Scaled 2 MGC at T1 POC (+2.00R), moved stop to BE+costs, trailed runner to +3.2R avg +2.60R.'
+        }
+      },
+      {
+        id: 'sample-2',
+        isSample: true,
+        date: '2026-11-17T10:15',
+        session: 'COMEX / RTH',
+        setup: 'Setup B',
+        instrument: 'MGC (2 cts)',
+        phase: 'Phase 3: Sim, Live Data',
+        scorecard: {
+          location: 2,
+          footprint: 3,
+          heatmap: 2,
+          context: 1,
+          risk: 1,
+          total: 9,
+          reasons: 'Loc(2): Prior-day VAH 3276.0 + overnight high; FP(3): Bar 6 +101 delta trapped, Bar 7 -175 delta + 4 stacked sell imb back inside value; HM(2): Passive ask wall held; Ctx(1): Mild upward drift prior to open; Risk(1): Stop above 3282.5 failed high, T1 POC = 2.00R.'
+        },
+        direction: 'Short',
+        entry: 3275.0,
+        stop: 3282.5,
+        t1: 3260.0,
+        t2: 3242.0,
+        exit: 3260.0,
+        rResult: 1.95,
+        screenshot: createSampleChartSVG('Setup B'),
+        hasViolation: 'No',
+        violations: [],
+        violationNote: '',
+        emotion: 'Patient / Detached',
+        emotionNote: 'Did not fade the initial breakout bar; waited for close back inside VAH.',
+        review: {
+          readCorrect: 'Pending',
+          execCorrect: 'Pending',
+          luck: 'Pending',
+          note: ''
+        }
+      }
+    ];
+
+    let trades = [];
+    let activePhase = TRAINING_PHASES[1].id;
+    let currentScreenshotDataUrl = '';
+    let activeMainTab = 'journal';
+
+    // =========================================================================
+    // INITIALIZATION & PERSISTENCE
+    // =========================================================================
+    function init() {
+      try {
+        const savedPhase = localStorage.getItem(PHASE_STORAGE_KEY);
+        if (savedPhase && TRAINING_PHASES.some(p => p.id === savedPhase)) {
+          activePhase = savedPhase;
+        }
+
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          trades = JSON.parse(raw);
+        } else {
+          trades = [...SAMPLE_TRADES];
+          persistTrades();
+        }
+      } catch (e) {
+        console.error('Error reading localStorage:', e);
+        trades = [...SAMPLE_TRADES];
+      }
+
+      renderPhaseSelector();
+      refreshAllViews();
+
+      // Global paste listener for screenshots when modal is open
+      window.addEventListener('paste', handlePasteScreenshot);
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeLightbox();
+          closeDetailModal();
+          closeConfirmModal();
+        }
+      });
+
+      // Close data dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        const menu = document.getElementById('dataMenu');
+        const btn = document.getElementById('dataMenuBtn');
+        if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+          menu.classList.add('hidden');
+        }
+      });
+    }
+
+    function persistTrades() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+      } catch (e) {
+        showToast('Storage quota warning: Try smaller screenshots or export JSON backup.', 'error');
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const colors = type === 'error'
+        ? 'bg-rose-950 border-rose-500 text-rose-200'
+        : 'bg-slate-900 border-emerald-500 text-emerald-200';
+      el.className = `pointer-events-auto px-4 py-2.5 rounded-xl border shadow-xl text-xs font-medium flex items-center gap-2 ${colors}`;
+      el.innerHTML = `<span>${msg}</span>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3800);
+    }
+
+    // =========================================================================
+    // TRAINING PHASE TRACKER (SECTION 14)
+    // =========================================================================
+    function renderPhaseSelector() {
+      const container = document.getElementById('phaseSelector');
+      container.innerHTML = TRAINING_PHASES.map(p => {
+        const active = p.id === activePhase;
+        return `<button onclick="setActivePhase('${p.id}')" class="px-2.5 py-1 rounded-md text-[11px] font-mono transition cursor-pointer ${
+          active
+            ? 'bg-emerald-600 text-white font-semibold shadow'
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+        }">${p.short}</button>`;
+      }).join('');
+
+      const current = TRAINING_PHASES.find(p => p.id === activePhase) || TRAINING_PHASES[0];
+      document.getElementById('phaseGoalText').textContent = `${current.id}: ${current.goal}`;
+      document.getElementById('phaseExitCriteria').textContent = current.exitCriteria;
+    }
+
+    function setActivePhase(phaseId) {
+      activePhase = phaseId;
+      localStorage.setItem(PHASE_STORAGE_KEY, phaseId);
+      renderPhaseSelector();
+      showToast(`Training phase updated to ${phaseId}`);
+    }
+
+    // =========================================================================
+    // KPI & ANALYTICS CALCULATIONS (SECTION 10, 11, 14)
+    // =========================================================================
+    function computeMetrics(list) {
+      const total = list.length;
+      if (total === 0) {
+        return {
+          total: 0, wins: 0, losses: 0, bes: 0,
+          winRate: 0, avgWinR: 0, avgLossR: 0, expectancyR: 0, totalR: 0,
+          complianceRate: 100, violationCount: 0
+        };
+      }
+
+      const winsList = list.filter(t => Number(t.rResult) > 0.05);
+      const lossesList = list.filter(t => Number(t.rResult) < -0.05);
+      const besList = list.filter(t => Math.abs(Number(t.rResult)) <= 0.05);
+
+      const wins = winsList.length;
+      const losses = lossesList.length;
+      const bes = besList.length;
+
+      const decided = wins + losses;
+      const winRate = decided > 0 ? (wins / decided) : 0;
+      const lossRate = decided > 0 ? (losses / decided) : 0;
+
+      const avgWinR = wins > 0
+        ? winsList.reduce((acc, t) => acc + Number(t.rResult), 0) / wins
+        : 0;
+      const avgLossR = losses > 0
+        ? Math.abs(lossesList.reduce((acc, t) => acc + Number(t.rResult), 0) / losses)
+        : 0;
+
+      // Section 11 formula: Expectancy per trade in R = (win rate x average win in R) - (loss rate x average loss in R)
+      const expectancyR = (winRate * avgWinR) - (lossRate * avgLossR);
+      const totalR = list.reduce((acc, t) => acc + Number(t.rResult || 0), 0);
+
+      const violationCount = list.filter(t => t.hasViolation === 'Yes').length;
+      const complianceRate = ((total - violationCount) / total) * 100;
+
+      return {
+        total, wins, losses, bes,
+        winRate: winRate * 100,
+        avgWinR,
+        avgLossR,
+        expectancyR,
+        totalR,
+        complianceRate,
+        violationCount
+      };
+    }
+
+    function renderKPIs() {
+      const m = computeMetrics(trades);
+      document.getElementById('kpiTotalTrades').textContent = m.total;
+      document.getElementById('kpiSampleSub').textContent = `${m.wins}W / ${m.losses}L / ${m.bes}BE`;
+      document.getElementById('kpiWinRate').textContent = `${m.winRate.toFixed(1)}%`;
+      document.getElementById('kpiAvgWin').textContent = `+${m.avgWinR.toFixed(2)}R`;
+      document.getElementById('kpiAvgLoss').textContent = `-${m.avgLossR.toFixed(2)}R`;
+
+      const expEl = document.getElementById('kpiExpectancy');
+      expEl.textContent = `${m.expectancyR >= 0 ? '+' : ''}${m.expectancyR.toFixed(2)}R`;
+      expEl.className = `text-2xl font-bold font-mono tabular-nums ${m.expectancyR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      document.getElementById('kpiTotalR').textContent = `Net: ${m.totalR >= 0 ? '+' : ''}${m.totalR.toFixed(2)}R`;
+
+      const compEl = document.getElementById('kpiCompliance');
+      compEl.textContent = `${m.complianceRate.toFixed(0)}%`;
+      compEl.className = `text-2xl font-bold font-mono tabular-nums ${m.complianceRate >= 90 ? 'text-emerald-400' : m.complianceRate >= 75 ? 'text-amber-400' : 'text-rose-400'}`;
+      document.getElementById('kpiViolationsCount').textContent = `${m.violationCount} rule violation${m.violationCount === 1 ? '' : 's'}`;
+
+      // Sample notice banner
+      const hasSamples = trades.some(t => t.isSample);
+      document.getElementById('sampleNotice').classList.toggle('hidden', !hasSamples);
+
+      // Unreviewed count badge
+      const unreviewed = trades.filter(t => !t.review || t.review.readCorrect === 'Pending').length;
+      document.getElementById('unreviewedBadge').textContent = unreviewed;
+    }
+
+    // =========================================================================
+    // TAB NAVIGATION
+    // =========================================================================
+    function switchMainTab(tab) {
+      activeMainTab = tab;
+      ['journal', 'analytics', 'review'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tabBtn-${t}`);
+        if (t === tab) {
+          btn.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer bg-slate-800 text-white';
+        } else {
+          btn.className = 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition cursor-pointer text-slate-400 hover:text-slate-200';
+        }
+      });
+
+      if (tab === 'analytics') renderAnalytics();
+      if (tab === 'review') renderWeeklyReview();
+    }
+
+    // =========================================================================
+    // JOURNAL TABLE RENDERING (SECTION 14: ONE ROW PER TRADE)
+    // =========================================================================
+    function getScoreBadgeHTML(total) {
+      if (total >= 8) {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">${total}/10 · FULL</span>`;
+      } else if (total >= 6) {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-amber-500/15 text-amber-300 border border-amber-500/30">${total}/10 · HALF</span>`;
+      } else {
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-rose-500/15 text-rose-400 border border-rose-500/30">${total}/10 · NO TRADE</span>`;
+      }
+    }
+
+    function formatDateTime(dtStr) {
+      if (!dtStr) return '--';
+      const [d, t] = dtStr.split('T');
+      return `${d} <span class="text-slate-400">${t || ''}</span>`;
+    }
+
+    function renderJournal() {
+      const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+      const setupFilter = document.getElementById('filterSetup').value;
+      const sessionFilter = document.getElementById('filterSession').value;
+      const violationFilter = document.getElementById('filterViolation').value;
+      const reviewFilter = document.getElementById('filterReview').value;
+
+      const filtered = trades.filter(t => {
+        if (setupFilter !== 'ALL' && t.setup !== setupFilter) return false;
+        if (sessionFilter !== 'ALL' && t.session !== sessionFilter) return false;
+        if (violationFilter === 'CLEAN' && t.hasViolation === 'Yes') return false;
+        if (violationFilter === 'VIOLATION' && t.hasViolation !== 'Yes') return false;
+        const isReviewed = t.review && t.review.readCorrect !== 'Pending';
+        if (reviewFilter === 'REVIEWED' && !isReviewed) return false;
+        if (reviewFilter === 'UNREVIEWED' && isReviewed) return false;
+
+        if (search) {
+          const hay = [
+            t.setup, t.session, t.instrument, t.emotion, t.emotionNote,
+            t.scorecard?.reasons, t.violationNote, ...(t.violations || []),
+            t.review?.note
+          ].join(' ').toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+      document.getElementById('filteredCountLabel').textContent = `Showing ${filtered.length} of ${trades.length} trade${trades.length === 1 ? '' : 's'}`;
+
+      const tbody = document.getElementById('journalTableBody');
+      const emptyState = document.getElementById('emptyState');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      tbody.innerHTML = filtered.map(t => {
+        const r = Number(t.rResult || 0);
+        const rColor = r > 0.05 ? 'text-emerald-400' : r < -0.05 ? 'text-rose-400' : 'text-slate-300';
+        const rPrefix = r > 0 ? '+' : '';
+        const dirBadge = t.direction === 'Long'
+          ? '<span class="text-emerald-400 font-mono font-bold">LONG</span>'
+          : '<span class="text-rose-400 font-mono font-bold">SHORT</span>';
+
+        const isReviewed = t.review && t.review.readCorrect !== 'Pending';
+        const reviewBadge = isReviewed
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Reviewed</span>`
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700">Pending</span>`;
+
+        const violationCell = t.hasViolation === 'Yes'
+          ? `<div class="space-y-0.5">
+               <span class="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">YES</span>
+               <div class="text-[11px] text-rose-300 max-w-[180px] truncate" title="${escapeHtml((t.violations || []).join(', ') + (t.violationNote ? ': ' + t.violationNote : ''))}">
+                 ${escapeHtml((t.violations && t.violations[0]) || t.violationNote || 'Rule violated')}
+               </div>
+             </div>`
+          : `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">No (Clean)</span>`;
+
+        const thumbCell = t.screenshot
+          ? `<button onclick="openLightbox('${t.id}')" class="group relative inline-block rounded-lg overflow-hidden border border-slate-700 hover:border-emerald-400 transition cursor-zoom-in">
+               <img src="${t.screenshot}" alt="Chart" class="w-16 h-10 object-cover" />
+             </button>`
+          : `<span class="text-[11px] text-slate-600 font-mono">No img</span>`;
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-3.5 whitespace-nowrap">
+              <div class="font-mono text-slate-200">${formatDateTime(t.date)}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(t.session)} ${t.isSample ? '<span class="ml-1 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-mono">SAMPLE</span>' : ''}</div>
+            </td>
+            <td class="py-3 px-3.5">
+              <div class="font-semibold text-white">${escapeHtml(t.setup)}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5">
+                ${dirBadge}
+                <span>·</span>
+                <span class="font-mono">${escapeHtml(t.instrument || '')}</span>
+              </div>
+              <div class="text-[10px] font-mono text-slate-500 mt-0.5">${escapeHtml(t.phase || '')}</div>
+            </td>
+            <td class="py-3 px-3.5">
+              ${getScoreBadgeHTML(t.scorecard?.total ?? 0)}
+              <div class="text-[11px] text-slate-400 mt-1 max-w-[220px] truncate" title="${escapeHtml(t.scorecard?.reasons || '')}">
+                ${escapeHtml(t.scorecard?.reasons || '')}
+              </div>
+            </td>
+            <td class="py-3 px-3.5 font-mono tabular-nums whitespace-nowrap">
+              <div class="text-slate-200">In: <span class="text-white font-semibold">${t.entry}</span> · Stop: <span class="text-rose-400">${t.stop}</span></div>
+              <div class="text-[11px] text-slate-400 mt-0.5">T1: ${t.t1 || '-'} · T2: ${t.t2 || '-'} · Out: <span class="text-slate-200">${t.exit}</span></div>
+            </td>
+            <td class="py-3 px-3.5 text-right font-mono tabular-nums whitespace-nowrap">
+              <span class="text-sm font-bold ${rColor}">${rPrefix}${r.toFixed(2)}R</span>
+            </td>
+            <td class="py-3 px-3.5 text-center">${thumbCell}</td>
+            <td class="py-3 px-3.5">${violationCell}</td>
+            <td class="py-3 px-3.5">
+              <div class="text-slate-200 font-medium">${escapeHtml(t.emotion || '')}</div>
+              ${t.emotionNote ? `<div class="text-[11px] text-slate-400 max-w-[160px] truncate" title="${escapeHtml(t.emotionNote)}">${escapeHtml(t.emotionNote)}</div>` : ''}
+            </td>
+            <td class="py-3 px-3.5 text-center">${reviewBadge}</td>
+            <td class="py-3 px-3.5 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1">
+                <button onclick="openDetailModal('${t.id}')" title="Inspect Full Row" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+                <button onclick="editTrade('${t.id}')" title="Edit Trade" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button onclick="promptDeleteTrade('${t.id}')" title="Delete Trade" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // ANALYTICS VIEW RENDERING
+    // =========================================================================
+    function renderAnalytics() {
+      // 1. Setup Breakdown (Grouped into Setup A family, Setup B family, Setup C family)
+      const setupGroups = [
+        { label: 'Setup A (Absorption @ VAL/VAH)', filter: t => t.setup.startsWith('Setup A') },
+        { label: 'Setup B (Failed Breakout @ VAH/VAL)', filter: t => t.setup.startsWith('Setup B') },
+        { label: 'Setup C (LVN Breakout & Retest)', filter: t => t.setup.startsWith('Setup C') }
+      ];
+
+      document.getElementById('setupBreakdownBody').innerHTML = setupGroups.map(g => {
+        const subset = trades.filter(g.filter);
+        const m = computeMetrics(subset);
+        const pct100 = Math.min(100, Math.round((m.total / 100) * 100));
+        return `
+          <tr>
+            <td class="py-3 pr-3 font-sans font-medium text-slate-200">${g.label}</td>
+            <td class="py-3 px-2">
+              <div class="flex items-center gap-2">
+                <span class="text-white font-bold">${m.total}/100</span>
+                <div class="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div class="h-full bg-emerald-500" style="width:${pct100}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-2 text-right text-slate-300">${m.winRate.toFixed(1)}%</td>
+            <td class="py-3 px-2 text-right text-emerald-400">+${m.avgWinR.toFixed(2)}R</td>
+            <td class="py-3 px-2 text-right text-rose-400">-${m.avgLossR.toFixed(2)}R</td>
+            <td class="py-3 pl-2 text-right font-bold ${m.expectancyR >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${m.expectancyR >= 0 ? '+' : ''}${m.expectancyR.toFixed(2)}R</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 2. Scorecard Tiers (Section 10)
+      const tiers = [
+        { label: '8–10 pts (Full Planned Size)', filter: t => (t.scorecard?.total ?? 0) >= 8, badge: 'text-emerald-400' },
+        { label: '6–7 pts (Half Size)', filter: t => (t.scorecard?.total ?? 0) >= 6 && (t.scorecard?.total ?? 0) <= 7, badge: 'text-amber-300' },
+        { label: '< 6 pts (No-Trade Zone)', filter: t => (t.scorecard?.total ?? 0) < 6, badge: 'text-rose-400' }
+      ];
+
+      document.getElementById('scorecardBreakdownBody').innerHTML = tiers.map(tier => {
+        const subset = trades.filter(tier.filter);
+        const m = computeMetrics(subset);
+        const avgR = m.total > 0 ? m.totalR / m.total : 0;
+        return `
+          <tr>
+            <td class="py-3 pr-3 font-sans font-medium ${tier.badge}">${tier.label}</td>
+            <td class="py-3 px-2 text-right text-white">${m.total}</td>
+            <td class="py-3 px-2 text-right text-slate-300">${m.winRate.toFixed(1)}%</td>
+            <td class="py-3 px-2 text-right font-bold ${avgR >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R</td>
+            <td class="py-3 pl-2 text-right ${m.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${m.totalR >= 0 ? '+' : ''}${m.totalR.toFixed(2)}R</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 3. Session Breakdown
+      const sessions = ['Globex / Asia', 'London', 'COMEX / RTH', 'Post-Settlement'];
+      document.getElementById('sessionBreakdownBody').innerHTML = sessions.map(sess => {
+        const subset = trades.filter(t => t.session === sess);
+        const m = computeMetrics(subset);
+        return `
+          <tr>
+            <td class="py-3 pr-3 font-sans font-medium text-slate-200">${sess}</td>
+            <td class="py-3 px-2 text-right text-white">${m.total}</td>
+            <td class="py-3 px-2 text-right text-slate-300">${m.winRate.toFixed(1)}%</td>
+            <td class="py-3 px-2 text-right font-bold ${m.expectancyR >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${m.expectancyR >= 0 ? '+' : ''}${m.expectancyR.toFixed(2)}R</td>
+            <td class="py-3 pl-2 text-right ${m.totalR >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${m.totalR >= 0 ? '+' : ''}${m.totalR.toFixed(2)}R</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 4. Process vs Outcome Matrix (Section 14)
+      const cleanWin = trades.filter(t => t.hasViolation !== 'Yes' && Number(t.rResult) > 0).length;
+      const cleanLoss = trades.filter(t => t.hasViolation !== 'Yes' && Number(t.rResult) <= 0).length;
+      const dirtyWin = trades.filter(t => t.hasViolation === 'Yes' && Number(t.rResult) > 0).length;
+      const dirtyLoss = trades.filter(t => t.hasViolation === 'Yes' && Number(t.rResult) <= 0).length;
+
+      document.getElementById('processMatrixGrid').innerHTML = `
+        <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+          <div class="text-[11px] font-mono uppercase text-emerald-400">Good Process + Win</div>
+          <div class="text-2xl font-bold font-mono text-white mt-1">${cleanWin}</div>
+          <div class="text-[11px] text-slate-400 mt-1">Valid edge realization.</div>
+        </div>
+        <div class="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+          <div class="text-[11px] font-mono uppercase text-cyan-300">Good Process + Loss</div>
+          <div class="text-2xl font-bold font-mono text-white mt-1">${cleanLoss}</div>
+          <div class="text-[11px] text-slate-400 mt-1">"A good trade." Normal cost of business.</div>
+        </div>
+        <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+          <div class="text-[11px] font-mono uppercase text-amber-300">Rule Violation + Win</div>
+          <div class="text-2xl font-bold font-mono text-white mt-1">${dirtyWin}</div>
+          <div class="text-[11px] text-slate-400 mt-1">"A problem you haven't paid for yet."</div>
+        </div>
+        <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30">
+          <div class="text-[11px] font-mono uppercase text-rose-400">Rule Violation + Loss</div>
+          <div class="text-2xl font-bold font-mono text-white mt-1">${dirtyLoss}</div>
+          <div class="text-[11px] text-slate-400 mt-1">Self-inflicted drawdown.</div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // WEEKLY REVIEW VIEW (SECTION 14)
+    // =========================================================================
+    function renderWeeklyReview() {
+      const onlyPending = document.getElementById('reviewOnlyPending').checked;
+      const list = trades
+        .filter(t => !onlyPending || !t.review || t.review.readCorrect === 'Pending')
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+      const container = document.getElementById('weeklyReviewList');
+      if (list.length === 0) {
+        container.innerHTML = `<div class="col-span-full rounded-xl bg-[#111827] border border-slate-800 p-8 text-center text-xs text-slate-400">All trades in this filter have been reviewed.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(t => {
+        const rev = t.review || { readCorrect: 'Pending', execCorrect: 'Pending', luck: 'Pending', note: '' };
+        const r = Number(t.rResult || 0);
+        const rClass = r > 0 ? 'text-emerald-400' : r < 0 ? 'text-rose-400' : 'text-slate-300';
+        return `
+          <div class="rounded-xl bg-[#111827] border border-slate-800 p-4 space-y-3">
+            <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-sm text-white">${escapeHtml(t.setup)}</span>
+                  ${getScoreBadgeHTML(t.scorecard?.total ?? 0)}
+                </div>
+                <div class="text-[11px] font-mono text-slate-400 mt-1">${formatDateTime(t.date)} · ${escapeHtml(t.session)} · Emotion: <span class="text-slate-200">${escapeHtml(t.emotion)}</span></div>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-base font-bold ${rClass}">${r > 0 ? '+' : ''}${r.toFixed(2)}R</div>
+                <div class="text-[10px] ${t.hasViolation === 'Yes' ? 'text-rose-400' : 'text-emerald-400'}">${t.hasViolation === 'Yes' ? 'VIOLATION' : 'RULES CLEAN'}</div>
+              </div>
+            </div>
+
+            <div class="text-xs text-slate-300 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+              <span class="font-mono text-[10px] uppercase text-slate-400 block mb-0.5">Scorecard Rationale:</span>
+              ${escapeHtml(t.scorecard?.reasons || 'No rationale recorded.')}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">1. Read Correct?</label>
+                <select onchange="updateReviewField('${t.id}', 'readCorrect', this.value)" class="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-xs text-white">
+                  <option value="Pending" ${rev.readCorrect === 'Pending' ? 'selected' : ''}>Pending</option>
+                  <option value="Yes" ${rev.readCorrect === 'Yes' ? 'selected' : ''}>Yes</option>
+                  <option value="No" ${rev.readCorrect === 'No' ? 'selected' : ''}>No</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">2. Execution Correct?</label>
+                <select onchange="updateReviewField('${t.id}', 'execCorrect', this.value)" class="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-xs text-white">
+                  <option value="Pending" ${rev.execCorrect === 'Pending' ? 'selected' : ''}>Pending</option>
+                  <option value="Yes" ${rev.execCorrect === 'Yes' ? 'selected' : ''}>Yes</option>
+                  <option value="No" ${rev.execCorrect === 'No' ? 'selected' : ''}>No</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">3. Lucky or Unlucky?</label>
+                <select onchange="updateReviewField('${t.id}', 'luck', this.value)" class="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-xs text-white">
+                  <option value="Pending" ${rev.luck === 'Pending' ? 'selected' : ''}>Pending</option>
+                  <option value="Normal Variance" ${rev.luck === 'Normal Variance' ? 'selected' : ''}>Normal Variance</option>
+                  <option value="Unlucky" ${rev.luck === 'Unlucky' ? 'selected' : ''}>Unlucky</option>
+                  <option value="Lucky" ${rev.luck === 'Lucky' ? 'selected' : ''}>Lucky</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="text" value="${escapeHtml(rev.note || '')}" onchange="updateReviewField('${t.id}', 'note', this.value)" placeholder="Weekly review note..." class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500" />
+              ${t.screenshot ? `<button onclick="openLightbox('${t.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 cursor-pointer">View Chart</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateReviewField(tradeId, field, value) {
+      const idx = trades.findIndex(t => t.id === tradeId);
+      if (idx === -1) return;
+      if (!trades[idx].review) {
+        trades[idx].review = { readCorrect: 'Pending', execCorrect: 'Pending', luck: 'Pending', note: '' };
+      }
+      trades[idx].review[field] = value;
+      persistTrades();
+      renderKPIs();
+      renderJournal();
+      showToast('Weekly review updated');
+    }
+
+    // =========================================================================
+    // MODAL FORM LOGIC: SCORECARD, R-CALC, SCREENSHOT COMPRESSION
+    // =========================================================================
+    function openTradeModal() {
+      document.getElementById('modalTitle').textContent = 'Log Order Flow Trade';
+      document.getElementById('editTradeId').value = '';
+      document.getElementById('tradeForm').reset();
+
+      // Default current local datetime
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('fDate').value = now.toISOString().slice(0, 16);
+      document.getElementById('fPhase').value = activePhase;
+      document.getElementById('fDirection').value = 'Long';
+
+      currentScreenshotDataUrl = '';
+      updateScreenshotPreviewUI();
+      toggleViolationDetails();
+      recalcScorecard();
+      recalcR();
+
+      document.getElementById('tradeModal').classList.remove('hidden');
+    }
+
+    function closeTradeModal() {
+      document.getElementById('tradeModal').classList.add('hidden');
+    }
+
+    function onSetupChange() {
+      const setup = document.getElementById('fSetup').value;
+      const isShort = setup.includes('(Short)') || setup === 'Setup B';
+      document.getElementById('fDirection').value = isShort ? 'Short' : 'Long';
+      recalcR();
+    }
+
+    function recalcScorecard() {
+      const loc = parseInt(document.getElementById('scLocation').value, 10) || 0;
+      const fp = parseInt(document.getElementById('scFootprint').value, 10) || 0;
+      const hm = parseInt(document.getElementById('scHeatmap').value, 10) || 0;
+      const ctx = parseInt(document.getElementById('scContext').value, 10) || 0;
+      const rsk = parseInt(document.getElementById('scRisk').value, 10) || 0;
+
+      document.getElementById('lblScoreLocation').textContent = `${loc} pts`;
+      document.getElementById('lblScoreFootprint').textContent = `${fp} pts`;
+      document.getElementById('lblScoreHeatmap').textContent = `${hm} pts`;
+      document.getElementById('lblScoreContext').textContent = `${ctx} pts`;
+      document.getElementById('lblScoreRisk').textContent = `${rsk} pts`;
+
+      const total = loc + fp + hm + ctx + rsk;
+      const scoreEl = document.getElementById('liveScoreDisplay');
+      const badgeEl = document.getElementById('liveSizingBadge');
+      scoreEl.textContent = `${total} / 10`;
+
+      if (total >= 8) {
+        scoreEl.className = 'text-xl font-bold font-mono text-emerald-400';
+        badgeEl.className = 'px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        badgeEl.textContent = '8+ PTS: FULL SIZE';
+      } else if (total >= 6) {
+        scoreEl.className = 'text-xl font-bold font-mono text-amber-400';
+        badgeEl.className = 'px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        badgeEl.textContent = '6–7 PTS: HALF SIZE';
+      } else {
+        scoreEl.className = 'text-xl font-bold font-mono text-rose-400';
+        badgeEl.className = 'px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        badgeEl.textContent = '<6 PTS: NO TRADE';
+      }
+    }
+
+    function recalcR() {
+      const dir = document.getElementById('fDirection').value;
+      const entry = parseFloat(document.getElementById('fEntry').value);
+      const stop = parseFloat(document.getElementById('fStop').value);
+      const t1 = parseFloat(document.getElementById('fT1').value);
+      const t2 = parseFloat(document.getElementById('fT2').value);
+      const exit = parseFloat(document.getElementById('fExit').value);
+
+      const previewEl = document.getElementById('plannedRPreview');
+      if (isNaN(entry) || isNaN(stop) || entry === stop) {
+        previewEl.innerHTML = `Planned T1: <span class="text-white">--</span> | Planned T2: <span class="text-white">--</span>`;
+        return;
+      }
+
+      const risk = dir === 'Long' ? (entry - stop) : (stop - entry);
+      if (risk <= 0) {
+        previewEl.innerHTML = `<span class="text-rose-400">Warning: Stop is on wrong side of entry for ${dir}</span>`;
+        return;
+      }
+
+      const t1R = !isNaN(t1)
+        ? ((dir === 'Long' ? (t1 - entry) : (entry - t1)) / risk).toFixed(2) + 'R'
+        : '--';
+      const t2R = !isNaN(t2)
+        ? ((dir === 'Long' ? (t2 - entry) : (entry - t2)) / risk).toFixed(2) + 'R'
+        : '--';
+
+      const t1Good = !isNaN(t1) && ((dir === 'Long' ? (t1 - entry) : (entry - t1)) / risk) >= 1.5;
+      previewEl.innerHTML = `1R Risk: <span class="text-white">${risk.toFixed(2)} pts</span> · Planned T1: <span class="${t1Good ? 'text-emerald-400' : 'text-amber-400'}">${t1R}</span> · Planned T2: <span class="text-white">${t2R}</span>`;
+
+      if (!isNaN(exit)) {
+        const realizedR = (dir === 'Long' ? (exit - entry) : (entry - exit)) / risk;
+        const rInput = document.getElementById('fRResult');
+        rInput.value = realizedR.toFixed(2);
+        rInput.className = `w-full px-3 py-2 rounded-lg bg-slate-900 border text-xs font-mono font-bold focus:outline-none ${
+          realizedR >= 0 ? 'border-emerald-500/50 text-emerald-400' : 'border-rose-500/50 text-rose-400'
+        }`;
+      }
+    }
+
+    function toggleViolationDetails() {
+      const hasV = document.getElementById('fHasViolation').value === 'Yes';
+      document.getElementById('violationChecklist').classList.toggle('hidden', !hasV);
+      document.getElementById('violationCleanMsg').classList.toggle('hidden', hasV);
+    }
+
+    // Image handling & compression so localStorage easily holds dozens of screenshots
+    function compressImageFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxW = 1280;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function processScreenshotFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      currentScreenshotDataUrl = await compressImageFile(file);
+      updateScreenshotPreviewUI();
+      showToast('Screenshot attached');
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files && e.target.files[0]) {
+        processScreenshotFile(e.target.files[0]);
+      }
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processScreenshotFile(e.dataTransfer.files[0]);
+      }
+    }
+
+    function handlePasteScreenshot(e) {
+      if (document.getElementById('tradeModal').classList.contains('hidden')) return;
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          processScreenshotFile(file);
+          break;
+        }
+      }
+    }
+
+    function removeScreenshot() {
+      currentScreenshotDataUrl = '';
+      updateScreenshotPreviewUI();
+    }
+
+    function updateScreenshotPreviewUI() {
+      const hasImg = Boolean(currentScreenshotDataUrl);
+      document.getElementById('screenshotEmptyPrompt').classList.toggle('hidden', hasImg);
+      document.getElementById('screenshotPreviewBox').classList.toggle('hidden', !hasImg);
+      if (hasImg) {
+        document.getElementById('screenshotPreviewImg').src = currentScreenshotDataUrl;
+      }
+    }
+
+    function saveTrade(e) {
+      e.preventDefault();
+      const editId = document.getElementById('editTradeId').value;
+
+      const loc = parseInt(document.getElementById('scLocation').value, 10) || 0;
+      const fp = parseInt(document.getElementById('scFootprint').value, 10) || 0;
+      const hm = parseInt(document.getElementById('scHeatmap').value, 10) || 0;
+      const ctx = parseInt(document.getElementById('scContext').value, 10) || 0;
+      const rsk = parseInt(document.getElementById('scRisk').value, 10) || 0;
+
+      const hasViolation = document.getElementById('fHasViolation').value;
+      const checkedViolations = hasViolation === 'Yes'
+        ? Array.from(document.querySelectorAll('input[name="vType"]:checked')).map(cb => cb.value)
+        : [];
+
+      const tradeObj = {
+        id: editId || 'trade-' + Date.now(),
+        isSample: false,
+        date: document.getElementById('fDate').value,
+        session: document.getElementById('fSession').value,
+        setup: document.getElementById('fSetup').value,
+        instrument: document.getElementById('fInstrument').value.trim(),
+        phase: document.getElementById('fPhase').value,
+        scorecard: {
+          location: loc,
+          footprint: fp,
+          heatmap: hm,
+          context: ctx,
+          risk: rsk,
+          total: loc + fp + hm + ctx + rsk,
+          reasons: document.getElementById('fScoreReasons').value.trim()
+        },
+        direction: document.getElementById('fDirection').value,
+        entry: parseFloat(document.getElementById('fEntry').value),
+        stop: parseFloat(document.getElementById('fStop').value),
+        t1: parseFloat(document.getElementById('fT1').value) || null,
+        t2: parseFloat(document.getElementById('fT2').value) || null,
+        exit: parseFloat(document.getElementById('fExit').value),
+        rResult: parseFloat(document.getElementById('fRResult').value) || 0,
+        screenshot: currentScreenshotDataUrl,
+        hasViolation,
+        violations: checkedViolations,
+        violationNote: hasViolation === 'Yes' ? document.getElementById('fViolationNote').value.trim() : '',
+        emotion: document.getElementById('fEmotion').value,
+        emotionNote: document.getElementById('fEmotionNote').value.trim(),
+        review: {
+          readCorrect: document.getElementById('fRevRead').value,
+          execCorrect: document.getElementById('fRevExec').value,
+          luck: document.getElementById('fRevLuck').value,
+          note: document.getElementById('fRevNote').value.trim()
+        }
+      };
+
+      if (editId) {
+        const idx = trades.findIndex(t => t.id === editId);
+        if (idx !== -1) trades[idx] = tradeObj;
+        showToast('Trade updated in journal');
+      } else {
+        trades.unshift(tradeObj);
+        showToast('New trade logged to journal');
+      }
+
+      persistTrades();
+      closeTradeModal();
+      refreshAllViews();
+    }
+
+    function editTrade(id) {
+      const t = trades.find(item => item.id === id);
+      if (!t) return;
+
+      document.getElementById('modalTitle').textContent = 'Edit Journal Entry';
+      document.getElementById('editTradeId').value = t.id;
+      document.getElementById('fDate').value = t.date || '';
+      document.getElementById('fSession').value = t.session || 'COMEX / RTH';
+      document.getElementById('fSetup').value = t.setup || 'Setup A';
+      document.getElementById('fInstrument').value = t.instrument || '';
+      document.getElementById('fPhase').value = t.phase || activePhase;
+
+      document.getElementById('scLocation').value = t.scorecard?.location ?? 0;
+      document.getElementById('scFootprint').value = t.scorecard?.footprint ?? 0;
+      document.getElementById('scHeatmap').value = t.scorecard?.heatmap ?? 0;
+      document.getElementById('scContext').value = t.scorecard?.context ?? 0;
+      document.getElementById('scRisk').value = t.scorecard?.risk ?? 0;
+      document.getElementById('fScoreReasons').value = t.scorecard?.reasons || '';
+      recalcScorecard();
+
+      document.getElementById('fDirection').value = t.direction || 'Long';
+      document.getElementById('fEntry').value = t.entry ?? '';
+      document.getElementById('fStop').value = t.stop ?? '';
+      document.getElementById('fT1').value = t.t1 ?? '';
+      document.getElementById('fT2').value = t.t2 ?? '';
+      document.getElementById('fExit').value = t.exit ?? '';
+      recalcR();
+      document.getElementById('fRResult').value = Number(t.rResult || 0).toFixed(2);
+
+      currentScreenshotDataUrl = t.screenshot || '';
+      updateScreenshotPreviewUI();
+
+      document.getElementById('fHasViolation').value = t.hasViolation || 'No';
+      toggleViolationDetails();
+      document.querySelectorAll('input[name="vType"]').forEach(cb => {
+        cb.checked = (t.violations || []).includes(cb.value);
+      });
+      document.getElementById('fViolationNote').value = t.violationNote || '';
+
+      document.getElementById('fEmotion').value = t.emotion || 'Calm & Focused';
+      document.getElementById('fEmotionNote').value = t.emotionNote || '';
+
+      const rev = t.review || {};
+      document.getElementById('fRevRead').value = rev.readCorrect || 'Pending';
+      document.getElementById('fRevExec').value = rev.execCorrect || 'Pending';
+      document.getElementById('fRevLuck').value = rev.luck || 'Pending';
+      document.getElementById('fRevNote').value = rev.note || '';
+
+      document.getElementById('tradeModal').classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // DETAIL INSPECTOR & LIGHTBOX
+    // =========================================================================
+    function openDetailModal(id) {
+      const t = trades.find(item => item.id === id);
+      if (!t) return;
+      const sc = t.scorecard || {};
+      const r = Number(t.rResult || 0);
+
+      document.getElementById('detailHeaderTitle').innerHTML = `${escapeHtml(t.setup)} · <span class="font-mono text-slate-400 text-sm">${formatDateTime(t.date)}</span>`;
+      document.getElementById('detailContent').innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400 text-[11px]">Session &amp; Instrument</div>
+            <div class="font-semibold text-white mt-0.5">${escapeHtml(t.session)}</div>
+            <div class="font-mono text-[11px] text-slate-400">${escapeHtml(t.instrument || '')}</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400 text-[11px]">Confluence Score</div>
+            <div class="mt-1">${getScoreBadgeHTML(sc.total ?? 0)}</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400 text-[11px]">Net R Result</div>
+            <div class="text-lg font-bold font-mono mt-0.5 ${r >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${r > 0 ? '+' : ''}${r.toFixed(2)}R</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400 text-[11px]">Rule Compliance</div>
+            <div class="font-bold mt-0.5 ${t.hasViolation === 'Yes' ? 'text-rose-400' : 'text-emerald-400'}">${t.hasViolation === 'Yes' ? 'VIOLATION FLAGGED' : 'CLEAN EXECUTION'}</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+          <div class="font-mono text-[11px] uppercase text-slate-400">Section 10 Scorecard Breakdown</div>
+          <div class="grid grid-cols-5 gap-2 text-center font-mono">
+            <div class="p-2 rounded bg-slate-950 border border-slate-800"><div class="text-[10px] text-slate-400">Location</div><div class="text-white font-bold">${sc.location}/2</div></div>
+            <div class="p-2 rounded bg-slate-950 border border-slate-800"><div class="text-[10px] text-slate-400">Footprint</div><div class="text-white font-bold">${sc.footprint}/3</div></div>
+            <div class="p-2 rounded bg-slate-950 border border-slate-800"><div class="text-[10px] text-slate-400">Heatmap</div><div class="text-white font-bold">${sc.heatmap}/2</div></div>
+            <div class="p-2 rounded bg-slate-950 border border-slate-800"><div class="text-[10px] text-slate-400">Context</div><div class="text-white font-bold">${sc.context}/2</div></div>
+            <div class="p-2 rounded bg-slate-950 border border-slate-800"><div class="text-[10px] text-slate-400">Risk &ge;1.5R</div><div class="text-white font-bold">${sc.risk}/1</div></div>
+          </div>
+          <p class="text-slate-200 pt-1">${escapeHtml(sc.reasons || '')}</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="font-mono text-[11px] uppercase text-slate-400 mb-1">Execution Prices</div>
+            <div class="font-mono text-slate-200 space-y-1">
+              <div>Direction: <span class="font-bold text-white">${t.direction}</span></div>
+              <div>Entry: <span class="text-white">${t.entry}</span> · Stop: <span class="text-rose-400">${t.stop}</span></div>
+              <div>T1: <span class="text-emerald-400">${t.t1 || '--'}</span> · T2: <span class="text-emerald-400">${t.t2 || '--'}</span> · Exit: <span class="text-white">${t.exit}</span></div>
+            </div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="font-mono text-[11px] uppercase text-slate-400 mb-1">Psychology &amp; Violations</div>
+            <div class="text-slate-200">Emotion: <span class="font-semibold text-white">${escapeHtml(t.emotion)}</span></div>
+            ${t.emotionNote ? `<div class="text-slate-400 mt-0.5">${escapeHtml(t.emotionNote)}</div>` : ''}
+            ${t.hasViolation === 'Yes' ? `<div class="text-rose-300 mt-1.5 font-medium">Violations: ${escapeHtml((t.violations || []).join(', '))} ${t.violationNote ? '— ' + escapeHtml(t.violationNote) : ''}</div>` : ''}
+          </div>
+        </div>
+
+        ${t.screenshot ? `
+          <div class="space-y-1.5">
+            <div class="font-mono text-[11px] uppercase text-slate-400">Trigger Evidence (Click to Enlarge)</div>
+            <img src="${t.screenshot}" onclick="openLightbox('${t.id}')" alt="Chart screenshot" class="w-full max-h-96 object-contain rounded-xl border border-slate-700 bg-slate-950 cursor-zoom-in" />
+          </div>
+        ` : ''}
+      `;
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    function openLightbox(id) {
+      const t = trades.find(item => item.id === id);
+      if (!t || !t.screenshot) return;
+      document.getElementById('lightboxImg').src = t.screenshot;
+      document.getElementById('lightboxCaption').textContent = `${t.setup} | ${t.date.replace('T', ' ')} | Score: ${t.scorecard?.total ?? 0}/10 | Result: ${Number(t.rResult) > 0 ? '+' : ''}${Number(t.rResult).toFixed(2)}R`;
+      document.getElementById('lightboxModal').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightboxModal').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // DATA MANAGEMENT: EXPORT, IMPORT, DELETE, CLEAR SAMPLES
+    // =========================================================================
+    function toggleDataMenu() {
+      document.getElementById('dataMenu').classList.toggle('hidden');
+    }
+
+    function clearSampleTrades() {
+      document.getElementById('dataMenu').classList.add('hidden');
+      const before = trades.length;
+      trades = trades.filter(t => !t.isSample);
+      persistTrades();
+      refreshAllViews();
+      showToast(before !== trades.length ? 'Illustrative sample trades cleared' : 'No sample trades present');
+    }
+
+    let pendingConfirmCallback = null;
+
+    function openConfirm(title, message, onConfirm) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      pendingConfirmCallback = onConfirm;
+      document.getElementById('confirmActionBtn').onclick = () => {
+        if (pendingConfirmCallback) pendingConfirmCallback();
+        closeConfirmModal();
+      };
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
+      pendingConfirmCallback = null;
+    }
+
+    function promptDeleteTrade(id) {
+      openConfirm(
+        'Delete Journal Entry?',
+        'This will permanently remove this trade row and its attached screenshot from your local journal.',
+        () => {
+          trades = trades.filter(t => t.id !== id);
+          persistTrades();
+          refreshAllViews();
+          showToast('Trade deleted');
+        }
+      );
+    }
+
+    function promptResetAll() {
+      document.getElementById('dataMenu').classList.add('hidden');
+      openConfirm(
+        'Reset All Journal Data?',
+        'All logged trades and screenshots will be cleared from browser storage. Make sure you have exported a JSON backup first.',
+        () => {
+          trades = [];
+          persistTrades();
+          refreshAllViews();
+          showToast('All journal data cleared');
+        }
+      );
+    }
+
+    function exportJSON() {
+      document.getElementById('dataMenu').classList.add('hidden');
+      const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `order-flow-journal-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('JSON backup downloaded');
+    }
+
+    function exportCSV() {
+      document.getElementById('dataMenu').classList.add('hidden');
+      const headers = [
+        'Date', 'Session', 'Setup', 'Instrument', 'Phase', 'Direction',
+        'ScoreTotal', 'ScoreLocation', 'ScoreFootprint', 'ScoreHeatmap', 'ScoreContext', 'ScoreRisk', 'ScoreReasons',
+        'Entry', 'Stop', 'T1', 'T2', 'Exit', 'R_Result',
+        'RuleViolation', 'ViolationsList', 'ViolationNote', 'EmotionalState', 'EmotionNote',
+        'Review_ReadCorrect', 'Review_ExecCorrect', 'Review_Luck', 'Review_Note'
+      ];
+
+      const rows = trades.map(t => {
+        const sc = t.scorecard || {};
+        const rev = t.review || {};
+        return [
+          t.date, t.session, t.setup, t.instrument, t.phase, t.direction,
+          sc.total, sc.location, sc.footprint, sc.heatmap, sc.context, sc.risk, sc.reasons,
+          t.entry, t.stop, t.t1 ?? '', t.t2 ?? '', t.exit, t.rResult,
+          t.hasViolation, (t.violations || []).join('; '), t.violationNote, t.emotion, t.emotionNote,
+          rev.readCorrect || '', rev.execCorrect || '', rev.luck || '', rev.note || ''
+        ].map(val => `"${String(val ?? '').replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `order-flow-journal-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV spreadsheet downloaded');
+    }
+
+    function importJSON(e) {
+      document.getElementById('dataMenu').classList.add('hidden');
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          if (!Array.isArray(imported)) throw new Error('Invalid format');
+          trades = imported;
+          persistTrades();
+          refreshAllViews();
+          showToast(`Imported ${trades.length} trades successfully`);
+        } catch (err) {
+          showToast('Invalid JSON backup file', 'error');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function refreshAllViews() {
+      renderKPIs();
+      renderJournal();
+      if (activeMainTab === 'analytics') renderAnalytics();
+      if (activeMainTab === 'review') renderWeeklyReview();
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
