@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Order Flow Playbook — Trading Journal (NinjaTrader 8 & ATAS Edition)</title>
+<title>Order Flow Playbook — Trading Journal (NinjaTrader 8 Edition)</title>
 <style>
   :root {
     --bg: #0f172a;
@@ -226,7 +226,7 @@
 <header>
   <div>
     <h1>Order Flow Playbook — Trading Journal</h1>
-    <p id="phaseDesc">Section 14 Rule-Based Journal | NinjaTrader 8 & ATAS Presets</p>
+    <p id="phaseDesc">Section 14 Rule-Based Journal | COMEX Gold (GC / MGC) & Centralized Futures</p>
   </div>
   <div class="phase-bar">
     <label for="trainingPhase" style="margin:0;">Training Phase:</label>
@@ -242,10 +242,10 @@
 <div class="container">
   <div class="tabs">
     <button class="tab-btn active" data-tab="log">Log Trade</button>
-    <button class="tab-btn" data-tab="import">Import Broker CSV (NT8 / ATAS)</button>
+    <button class="tab-btn" data-tab="import">Import Broker CSV</button>
     <button class="tab-btn" data-tab="entries">Journal Log (<span id="tradeCount">0</span>)</button>
-    <button class="tab-btn" data-tab="analytics">Expectancy & Sample</button>
-    <button class="tab-btn" data-tab="review">Weekly Review & Backup</button>
+    <button class="tab-btn" data-tab="analytics">Expectancy & 100-Trade Sample</button>
+    <button class="tab-btn" data-tab="review">Weekly Process Review & Backup</button>
   </div>
 
   <!-- TAB 1: LOG TRADE -->
@@ -723,7 +723,6 @@
         return;
       }
 
-      // Simple CSV line splitter respecting quotes
       const parseCSVLine = (line) => {
         const res = [];
         let cur = '';
@@ -757,10 +756,7 @@
         let pnlR = 1.0;
 
         if (preset === 'nt8') {
-          // NT8 Trade Performance typical header matching
-          // e.g. Instrument, Market Position, Entry price, Exit price, Profit, Entry time, Exit time
           const findCol = (name) => headers.findIndex(h => h.includes(name));
-          const instIdx = findCol('instrument');
           const posIdx = findCol('market position') !== -1 ? findCol('market position') : findCol('action');
           const entryIdx = findCol('entry price');
           const exitIdx = findCol('exit price');
@@ -777,7 +773,6 @@
           const profit = profitIdx !== -1 ? parseFloat(row[profitIdx]) : 50;
           pnlR = isNaN(profit) ? 1.0 : (profit >= 0 ? 1.5 : -1.0);
         } else if (preset === 'atas') {
-          // ATAS Statistics Journal headers
           const findCol = (name) => headers.findIndex(h => h.includes(name));
           const entryIdx = findCol('open price');
           const exitIdx = findCol('close price');
@@ -939,9 +934,7 @@
       document.getElementById('imgModal').classList.add('open');
     }
   };
-  document.getElementById('imgModal').addEventListener('click', () => {
-    document.getElementById('imgModal').classList.remove('open');
-  });
+  document.getElementById('imgModal').classList.remove('open'); // safeguard
 
   // Analytics
   function calcStats(list) {
@@ -1058,7 +1051,7 @@
       `"${[...t.violations, t.violationNotes].filter(Boolean).join('; ').replace(/"/g, '""')}"`,
       `"${(t.emotion || '').replace(/"/g, '""')}"`
     ].join(','));
-    const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
+    const blob = new Blob([[headers.join(','), ...rows].join('\\n')], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'Order_Flow_Playbook_Journal.csv';
@@ -1105,3 +1098,4 @@
 </script>
 </body>
 </html>
+"""
